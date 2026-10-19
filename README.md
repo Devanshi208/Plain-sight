@@ -4,7 +4,7 @@ A dictionary for people who were never given one.
 
 114 cybersecurity terms, each explained in four sentences and an analogy. Eleven of them don't just explain — they demonstrate, live, on your own browser, or animate step by step.
 
-**[Open it →](#)** *(add your live link here)*
+**[Open it →](#)** *  https://plain-sight-lovat.vercel.app
 
 ---
 
