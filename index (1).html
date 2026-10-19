@@ -1,0 +1,1465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+img{max-width:100%}
+</style>
+<title>Plainsight</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+/* Layout: a reference book opened flat. Index of terms on the left, one entry on the
+   right. Cool ink ground, warm sand text — a lamp held over something hidden.
+   Mono = the machine's words. Serif = a person explaining. Aqua = read off your
+   own machine, live, just now. Committed dark: the reader asked for dark always. */
+:root{
+  color-scheme: dark;
+  --ink:#0f1119; --ink2:#161a26; --ink3:#1d2231; --ink4:#252b3c;
+  --line:#2b3245; --line2:#3a4258;
+  --sand:#ece4d6; --dim:#9a9389; --faint:#6d6a68;
+  --amber:#f0b45e; --live:#7fd7c4;
+  --watch:#7fd7c4; --lock:#a98ce0; --in:#e8707f; --stop:#86c98a; --job:#f0b45e; --ai:#e2925f; --net:#8fa8d8;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --ui:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --read:'Newsreader',Georgia,'Times New Roman',serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--ink);color:var(--sand);font-family:var(--ui);font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--ink)}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:2px}
+
+/* ---- chrome ---- */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--ink);
+  border-bottom:1px solid var(--line)}
+.bar-in{max-width:1180px;margin:0 auto;padding-block:11px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.wordmark{display:flex;align-items:baseline;gap:9px;margin-right:auto;min-width:0}
+.wordmark b{font-family:var(--ui);font-weight:700;font-size:17px;letter-spacing:-.025em}
+.wordmark b i{font-style:normal;color:var(--amber)}
+.wordmark span{font-family:var(--read);font-style:italic;color:var(--dim);font-size:13px;white-space:nowrap}
+.modes{display:flex;border:1px solid var(--line2);border-radius:3px;overflow:hidden;flex:none}
+.modes button{padding:6px 13px;font-size:12px;font-weight:500;letter-spacing:.03em;color:var(--dim)}
+.modes button[aria-selected="true"]{background:var(--ink4);color:var(--sand)}
+.tally{font-family:var(--mono);font-size:11px;color:var(--faint);white-space:nowrap}
+
+/* ---- shell ---- */
+.shell{max-width:1180px;margin:0 auto;padding-block:0 60px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.cols{display:grid;grid-template-columns:270px minmax(0,1fr);gap:30px;align-items:start}
+
+/* ---- index column ---- */
+.idx{position:sticky;top:calc(env(safe-area-inset-top,0px) + 58px);padding-top:20px;
+  max-height:calc(100vh - 80px);display:flex;flex-direction:column;gap:11px;min-width:0}
+.find{position:relative}
+.find input{width:100%;background:var(--ink2);border:1px solid var(--line);border-radius:3px;
+  padding:9px 11px 9px 30px;font-size:13px;outline:none}
+.find input:focus{border-color:var(--line2)}
+.find svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);stroke:var(--faint);fill:none}
+.cats{display:flex;flex-wrap:wrap;gap:4px}
+.cats button{font-size:11px;letter-spacing:.02em;padding:4px 8px;border:1px solid var(--line);border-radius:999px;color:var(--dim)}
+.cats button[aria-pressed="true"]{border-color:currentColor}
+.cats button .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:1px;background:currentColor}
+.list{overflow-y:auto;min-height:0;flex:1;margin:0 -4px;padding:2px 4px 4px;scrollbar-width:thin}
+.grp{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--faint);
+  padding:13px 0 5px;text-transform:uppercase}
+.list .grp:first-child{padding-top:2px}
+.item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:5px 7px;border-radius:3px;
+  font-family:var(--mono);font-size:12.5px;color:var(--sand);line-height:1.35;border-left:2px solid transparent}
+.item:hover{background:var(--ink2)}
+.item[aria-current="true"]{background:var(--ink3);border-left-color:var(--c)}
+.item .tick{width:5px;height:5px;border-radius:50%;flex:none;background:var(--c);opacity:.28}
+.item.seen .tick{opacity:1}
+.item .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .zap{margin-left:auto;font-size:9px;color:var(--live);flex:none;letter-spacing:.05em}
+.none{padding:14px 7px;font-family:var(--read);font-style:italic;color:var(--dim);font-size:14px}
+
+/* ---- entry ---- */
+.entry{padding-top:24px;min-width:0}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--c);margin-bottom:11px}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:var(--c)}
+h1{font-family:var(--mono);font-weight:700;font-size:clamp(26px,4.4vw,38px);line-height:1.05;
+  letter-spacing:-.03em;margin:0;text-wrap:balance;overflow-wrap:break-word}
+.alias{font-family:var(--mono);font-size:12px;color:var(--faint);margin-top:7px}
+.gist{font-family:var(--read);font-size:clamp(18px,2.5vw,21px);line-height:1.42;color:var(--amber);
+  margin:15px 0 0;max-width:34em;text-wrap:pretty}
+.rule{height:1px;background:var(--line);margin:24px 0}
+.block{max-width:36em}
+.block + .block{margin-top:24px}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:8px}
+.prose{font-family:var(--read);font-size:17.5px;line-height:1.62;color:var(--sand);margin:0}
+.prose + .prose{margin-top:.7em}
+.likeit{font-family:var(--read);font-size:17px;line-height:1.6;font-style:italic;color:var(--sand);
+  margin:0;border-left:2px solid var(--line2);padding-left:15px}
+.why{font-family:var(--ui);font-size:14.5px;line-height:1.58;color:var(--dim);margin:0}
+.why b{color:var(--sand);font-weight:500}
+
+/* ---- live ---- */
+.live{margin-top:26px;border:1px solid var(--line);border-radius:4px;background:var(--ink2);overflow:hidden;max-width:40em}
+.live-top{display:flex;align-items:center;gap:8px;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--ink3)}
+.live-top .bulb{width:7px;height:7px;border-radius:50%;background:var(--live);box-shadow:0 0 9px var(--live);flex:none}
+.live-top h2{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--live);margin:0;font-weight:500}
+.live-body{padding:13px}
+.live-note{font-family:var(--ui);font-size:12.5px;line-height:1.5;color:var(--dim);padding:0 13px 12px}
+.rows{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(90px,34%) minmax(0,1fr);gap:10px;background:var(--ink2);padding:7px 10px}
+.row dt{font-family:var(--ui);font-size:12px;color:var(--dim);min-width:0}
+.row dd{margin:0;font-family:var(--mono);font-size:12px;color:var(--live);min-width:0;
+  overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.fld{width:100%;background:var(--ink);border:1px solid var(--line2);border-radius:3px;padding:9px 11px;
+  font-family:var(--mono);font-size:13px;outline:none}
+.fld:focus{border-color:var(--live)}
+.out{margin-top:10px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:10px 11px;
+  font-family:var(--mono);font-size:12px;color:var(--live);overflow-wrap:anywhere;min-height:1.4em;line-height:1.55}
+.out.quiet{color:var(--faint)}
+.btns{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.btn{border:1px solid var(--line2);border-radius:3px;padding:6px 12px;font-size:12.5px;color:var(--sand)}
+.btn:hover{background:var(--ink4);border-color:var(--live)}
+.btn:disabled{opacity:.32;cursor:default}
+.btn:disabled:hover{background:none;border-color:var(--line2)}
+.nlab.bad{fill:var(--in)}
+.nlab.start{text-anchor:start}
+.meter{height:5px;background:var(--ink4);border-radius:3px;overflow:hidden;margin:11px 0 7px}
+.meter i{display:block;height:100%;width:0;background:var(--live);transition:width .22s}
+.pair{display:grid;gap:9px;grid-template-columns:1fr 1fr}
+.swap{display:flex;gap:7px;margin-bottom:9px}
+.swap button{font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:4px 9px;border:1px solid var(--line);border-radius:3px;color:var(--dim)}
+.swap button[aria-pressed="true"]{border-color:var(--live);color:var(--live)}
+
+/* ---- decode ---- */
+.decode{padding-top:26px;max-width:760px;margin:0 auto}
+.decode h1{font-family:var(--ui);font-weight:700;font-size:clamp(23px,3.6vw,30px);letter-spacing:-.03em}
+.decode .sub{font-family:var(--read);font-size:17px;line-height:1.55;color:var(--dim);margin:11px 0 20px;max-width:32em}
+.paste{width:100%;min-height:150px;resize:vertical;background:var(--ink2);border:1px solid var(--line);
+  border-radius:4px;padding:14px;font-family:var(--read);font-size:16px;line-height:1.6;outline:none}
+.paste:focus{border-color:var(--line2)}
+.result{margin-top:20px;font-family:var(--read);font-size:17.5px;line-height:1.75;white-space:pre-wrap;
+  overflow-wrap:break-word;border-top:1px solid var(--line);padding-top:20px}
+.hit{color:var(--amber);border-bottom:1px dashed currentColor;cursor:pointer;padding:0 1px}
+.hit:hover{background:rgba(240,180,94,.14)}
+.tally2{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-top:16px}
+.sample{font-size:12.5px;color:var(--dim);text-decoration:underline;text-underline-offset:3px}
+.sample:hover{color:var(--amber)}
+
+.foot{margin-top:46px;padding-top:18px;border-top:1px solid var(--line);
+  font-family:var(--read);font-size:14.5px;line-height:1.6;color:var(--faint);max-width:34em}
+.foot i{color:var(--dim)}
+
+/* ---- intro ---- */
+#intro{position:fixed;inset:0;z-index:60;background:var(--ink);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+  padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));
+  padding-block:calc(env(safe-area-inset-top,0px) + 26px) calc(env(safe-area-inset-bottom,0px) + 26px);
+  transition:opacity .45s;overflow-y:auto}
+#intro.gone{opacity:0;pointer-events:none}
+.i-mark{font-family:var(--ui);font-weight:700;letter-spacing:-.045em;line-height:1;font-size:clamp(44px,11vw,84px)}
+.i-mark i{font-style:normal;color:var(--amber)}
+.i-line{font-family:var(--read);font-style:italic;color:var(--dim);font-size:clamp(15px,2.5vw,20px);
+  margin-top:15px;max-width:25em;line-height:1.5;text-wrap:balance}
+.i-reveal{margin-top:34px;display:flex;flex-direction:column;gap:6px;align-items:center;
+  font-family:var(--mono);font-size:12.5px;color:var(--live);line-height:1.55;min-height:150px;
+  justify-content:flex-start}
+.i-reveal div{opacity:0;animation:fadein .55s forwards}
+.i-reveal .punch{color:var(--sand)}
+@keyframes fadein{to{opacity:1}}
+.i-go{margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:11px;opacity:0;animation:fadein .6s forwards}
+.i-key{border:1px solid var(--line2);border-radius:4px;padding:11px 26px;font-family:var(--mono);
+  font-size:13px;letter-spacing:.1em;color:var(--sand);background:var(--ink2)}
+.i-key:hover{border-color:var(--amber);color:var(--amber)}
+.i-sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;color:var(--faint)}
+
+/* ---- stepped diagrams ---- */
+.diag{margin-top:26px;border:1px solid var(--line);border-radius:4px;background:var(--ink2);overflow:hidden;max-width:40em}
+.diag-top{display:flex;align-items:center;gap:8px;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--ink3)}
+.diag-top .bulb{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 9px var(--amber);flex:none}
+.diag-top h2{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--amber);margin:0;font-weight:500}
+.diag-body{padding:13px 13px 4px}
+.diag svg{display:block;width:100%;max-width:100%;height:auto}
+.diag svg [data-s]{transition:opacity .3s}
+.diag-cap{font-family:var(--ui);font-size:13.5px;line-height:1.58;color:var(--sand);
+  padding:12px 13px 0;min-height:5.6em}
+.diag-cap b{color:var(--amber);font-weight:500;display:block;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)}
+.diag-ctl{display:flex;align-items:center;gap:7px;padding:12px 13px 13px;flex-wrap:wrap}
+.diag-ctl .step{font-family:var(--mono);font-size:11px;color:var(--faint);margin-left:auto;font-variant-numeric:tabular-nums}
+.lane{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4;fill:none}
+.flow{stroke:var(--line2);stroke-width:1.6;fill:none}
+.head{fill:var(--line2)}
+.box{fill:var(--ink3);stroke:var(--line2);stroke-width:1}
+.nlab{fill:var(--sand);font-family:var(--mono),monospace;font-size:11px;text-anchor:middle}
+.nlab.dim{fill:var(--faint)}
+.flab{fill:var(--dim);font-family:var(--ui),sans-serif;font-size:11px;text-anchor:middle}
+.blab{fill:var(--sand);font-family:var(--ui),sans-serif;font-size:11px;text-anchor:middle}
+.blab.dim{fill:var(--dim);font-size:10px}
+g.on .flow{stroke:var(--amber)}
+g.on .head{fill:var(--amber)}
+g.on .box{stroke:var(--amber)}
+g.on .flab{fill:var(--amber)}
+.flow.bad{stroke:var(--in)}
+.head.bad{fill:var(--in)}
+g.on .flow.bad{stroke:var(--in)}
+g.on .head.bad{fill:var(--in)}
+.box.seal{fill:rgba(134,201,138,.09);stroke:var(--stop)}
+g.on .box.seal{stroke:var(--stop)}
+.box.bad{stroke:var(--in)}
+g.on .box.bad{stroke:var(--in)}
+.xmark{stroke:var(--in);stroke-width:2.4;stroke-linecap:round}
+.blab.good{fill:var(--stop)}
+.blab.bad{fill:var(--in)}
+.zap.vz{color:var(--amber)}
+
+@media (max-width:860px){
+  .cols{grid-template-columns:1fr;gap:0}
+  .idx{position:static;max-height:none;padding-top:16px}
+  .list{max-height:290px;flex:none}
+  .entry{padding-top:22px;border-top:1px solid var(--line);margin-top:18px}
+  .pair{grid-template-columns:1fr}
+  .row{grid-template-columns:1fr;gap:2px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important}
+  .i-reveal div,.i-go{opacity:1!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<div id="intro">
+  <div class="i-mark">plain<i>sight</i></div>
+  <p class="i-line">The words nobody explained, and the machinery nobody showed you.</p>
+  <div class="i-reveal" id="iReveal"></div>
+  <div class="i-go" id="iGo" hidden>
+    <button class="i-key" id="iEnter">PRESS ENTER</button>
+    <div class="i-sub" id="iSub"></div>
+  </div>
+</div>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="wordmark"><b>plain<i>sight</i></b><span>the words nobody explained</span></div>
+    <div class="modes" role="tablist">
+      <button id="mIdx" role="tab" aria-selected="true">Index</button>
+      <button id="mDec" role="tab" aria-selected="false">Decode</button>
+    </div>
+    <div class="tally" id="tally"></div>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="cols" id="viewIdx">
+    <aside class="idx">
+      <div class="find">
+        <svg width="13" height="13" viewBox="0 0 24 24" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="q" type="search" placeholder="Find a word" aria-label="Find a word" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="cats" id="cats"></div>
+      <div class="list" id="list"></div>
+    </aside>
+    <main class="entry" id="entry"></main>
+  </div>
+
+  <div class="decode" id="viewDec" hidden>
+    <h1>Paste in anything you couldn't read.</h1>
+    <p class="sub">A lecture slide, a job posting, a message somebody sent you. Every word this book knows will light up. Tap one.</p>
+    <textarea id="paste" class="paste" spellcheck="false" aria-label="Text to decode" placeholder="Paste it here…"></textarea>
+    <div class="btns">
+      <button class="btn" id="decodeGo">Light it up</button>
+      <button class="sample" id="decodeEg">use an example</button>
+    </div>
+    <div id="decodeOut"></div>
+  </div>
+
+  <p class="foot">Nothing in here was ever hard. It was written by people who already knew, for people who already knew. <i>That is a writing problem, not a you problem.</i></p>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+
+var CATS=[
+  {k:'watch',n:'Watching you',c:'var(--watch)'},
+  {k:'lock', n:'Locks and keys',c:'var(--lock)'},
+  {k:'in',   n:'Ways in',c:'var(--in)'},
+  {k:'stop', n:'Ways to stop it',c:'var(--stop)'},
+  {k:'net',  n:'Under the hood',c:'var(--net)'},
+  {k:'job',  n:'The job and its words',c:'var(--job)'},
+  {k:'ai',   n:'AI security',c:'var(--ai)'}
+];
+
+/* t=term  a=also called  c=category  g=gist  p=[paragraphs]  l=analogy  w=why it matters  d=live demo */
+var T=[
+/* ---------------- watching you ---------------- */
+{t:'Cookie',c:'watch',d:'cookie',
+ g:'A small note a website asks your browser to carry, and hand back on every visit.',
+ p:['When you open a site, it can ask your browser to store a tiny piece of text. Your browser keeps it and hands it back automatically every single time you return, without asking you first.','The site decides what is written on the note and how long your browser holds on to it. That is how it remembers you are logged in. It is also how it remembers everything else.'],
+ l:'A cloakroom ticket. The cloakroom has no idea what your face looks like. It only knows the number on the ticket.',
+ w:'The same mechanism that saves you logging in forty times a day is the one that lets a company recognise you across the internet. Convenience and surveillance are literally the same feature.'},
+
+{t:'Third-party cookie',c:'watch',a:'tracking cookie',v:'trackers',
+ g:'A cookie dropped by a company whose website you are not even on.',
+ p:['Almost every page loads pieces from other companies: adverts, fonts, share buttons, analytics. Each of those companies can set its own cookie while you are sitting on somebody else’s website.','Because that one company’s code sits on thousands of sites, it sees you arrive over and over and stitches the path together. You never visited them. You never agreed to anything. They have your browsing history.'],
+ l:'You walk through ten different shops and the same man is standing quietly in the corner of every one. The shops do not talk to each other. He does not need them to.',
+ w:'This is the engine of the online advertising industry. Browsers are now shutting third-party cookies off, which is exactly why trackers moved to fingerprinting instead.'},
+
+{t:'Browser fingerprint',c:'watch',d:'fp',a:'device fingerprint',
+ g:'Being recognised by the shape of your browser, with nothing stored on your machine at all.',
+ p:['To draw a page properly, your browser hands over a pile of ordinary details: screen size, timezone, language, installed fonts, graphics card, how many processor cores you have.','Not one of those identifies you. Put all of them together and the combination is often rare enough to pick you out of millions of people. Nothing was saved to your computer, so there is nothing for you to delete, and no box to decline.'],
+ l:'Nobody is identified by having brown hair. Brown hair, left-handed, 5′4", speaks Malayalam, allergic to shellfish, born in August — now there might be one of you.',
+ w:'Fingerprinting survives private browsing and survives deleting every cookie you own. It is where tracking goes when cookies stop working.'},
+
+{t:'Canvas fingerprinting',c:'watch',
+ g:'Asking your browser to draw a hidden picture, because yours draws it slightly differently to everyone else’s.',
+ p:['A page can quietly draw text and shapes onto an invisible canvas, then read back the exact pixels. Your graphics card, drivers, fonts and operating system all nudge the result a fraction.','The picture is never shown to you. The tiny differences in the pixels become an identifier, and the same machine produces the same one every time.'],
+ l:'Asking a hundred people to sign their name. Everyone writes the same word. No two signatures match.',
+ w:'It is one of the strongest fingerprinting signals there is, and it runs without a single permission prompt. You can see your own further down this page.'},
+
+{t:'User agent',c:'watch',d:'ua',
+ g:'A line of text your browser announces to every website, saying what it is.',
+ p:['Every request your browser sends carries a string describing the browser and operating system. Sites use it to decide whether to send you the phone layout or the desktop one.','It has become a historical mess. Most browsers now claim to be several other browsers at once, for compatibility reasons going back decades. It is also a free ingredient for a fingerprint.'],
+ l:'Shouting your height, age and nationality through the letterbox before anyone has opened the door.',
+ w:'It is the easiest tracking signal to see and the easiest to fake, which makes it a good first thing to go and look at.'},
+
+{t:'Local storage',c:'watch',d:'storage',
+ g:'A bigger drawer in your browser that a site can write to, and that never expires on its own.',
+ p:['A cookie is small and gets sent to the server on every single request. Local storage is roomier, stays on your machine, and is only read when the site’s own code asks for it.','Nothing expires unless the site deletes it or you clear your browser data. Each site gets its own drawer and cannot read anybody else’s.'],
+ l:'A cookie is a note in your pocket that you show the doorman every time. Local storage is a locker in the lobby that only that building can open.',
+ w:'People clear cookies and think they have cleared everything. Local storage, and its cousins, sit there untouched.'},
+
+{t:'Session',c:'watch',
+ g:'The stretch of time a site treats you as the same logged-in person.',
+ p:['When you log in, the server makes a record that you are you, and gives your browser a token pointing at that record. Every later request carries the token, so you are not asked for your password again.','Logging out throws the record away. A timeout does the same thing after a while of silence, which is why banks boot you out so fast.'],
+ l:'A wristband at a festival. You showed your ticket once at the gate. After that the band is the whole argument.',
+ w:'Steal the token and you do not need the password at all. That is session hijacking, and it is why sites care so much about how those tokens are stored.'},
+
+{t:'Tracking pixel',c:'watch',a:'web beacon',
+ g:'An invisible one-pixel image that exists only so somebody learns you opened something.',
+ p:['Your mail app or browser has to fetch the image from a server to display it. That fetch is the whole point. The server now knows the moment you opened it, roughly where you were, and what you opened it on.','The image is transparent or one pixel wide, so you never see a thing.'],
+ l:'An envelope that phones the sender the instant you slit it open.',
+ w:'This is how marketing email knows you read it. Blocking remote images in your mail app switches most of it off.'},
+
+{t:'IP address',c:'watch',
+ g:'The return address your connection has to hand over for anything to come back.',
+ p:['Every device talking to the internet has one, handed out by whoever provides your connection. Servers need it or they have nowhere to send the reply.','It roughly locates you, usually to a city rather than a street, and your provider knows exactly which customer had it at which moment.'],
+ l:'You cannot order a delivery without giving an address. You can give the address of a post office instead of your flat, which is roughly what a VPN does.',
+ w:'It is the one piece of tracking you genuinely cannot avoid handing over. You can only route it through somebody else.'},
+
+{t:'DNS',c:'watch',a:'domain name system',
+ g:'The internet’s phone book: it turns a name you can remember into a number machines can use.',
+ p:['Machines route by numbers, not names. Before your browser can reach a site, it asks a DNS server what number that name points to.','Classically that question travelled in plain text, so your provider, and anyone on the path, could read a list of every site you were about to visit — even when the sites themselves were encrypted.'],
+ l:'Phoning directory enquiries and saying the name out loud in a crowded room, then making the call in private.',
+ w:'Encrypted DNS closes that leak, and it is a good example of something being technically private while still broadcasting where you are going.'},
+
+{t:'Private browsing',c:'watch',a:'incognito',
+ g:'Hides your history from other people using your computer. From almost nobody else.',
+ p:['It gives you a blank set of cookies and throws them away at the end, so nothing shows in your history. That is the entire feature.','Your network provider still sees the traffic. The sites still see your IP address. Fingerprinting still works. If you log into an account, you are logged in, and that is that.'],
+ l:'Whispering. Everyone still in the room still hears you.',
+ w:'The gap between what people believe this does and what it actually does is one of the largest in all of consumer security.'},
+
+{t:'Metadata',c:'watch',
+ g:'Everything about a message except the message. Usually more revealing than the message.',
+ p:['Who contacted whom, at what time, from where, for how long, how often. The contents can be perfectly encrypted while all of this stays wide open.','A photo carries it too: camera model, settings, and often the exact coordinates where it was taken.'],
+ l:'Nobody heard the call. Everybody knows you rang an oncologist, then your mother, then your boss, in that order, at 6am.',
+ w:'Encryption protects the words. Metadata is usually the part that actually gives you away, and most people never think about it.'},
+
+/* ---------------- locks and keys ---------------- */
+{t:'Encryption',c:'lock',
+ g:'Scrambling something so that only a holder of the right key can unscramble it.',
+ p:['You put in readable data and a key, and get out something that looks like noise. Run the noise back through with the right key and the original comes out, perfectly.','The security lives entirely in the key. The method itself is public and studied by everyone — a method that only stays safe while it is secret is not considered safe at all.'],
+ l:'A safe. Everyone can buy the same model and read the manual. The point was never that the safe is a mystery.',
+ w:'If somebody tells you their encryption is secure because nobody knows how it works, you have just learned something important about their encryption.'},
+
+{t:'Symmetric encryption',c:'lock',
+ g:'One key both locks and unlocks. Fast, and you have to get the key to the other person somehow.',
+ p:['Both sides share the identical key. It is quick enough to encrypt a whole video call or a whole hard drive without noticing.','The problem is delivery. How do you get the key to someone on the other side of the world without anybody intercepting it on the way?'],
+ l:'A door key you both have copies of. Brilliant, right up until you have to post one.',
+ w:'Nearly all real encryption is symmetric. The other kind exists mostly to solve the delivery problem.'},
+
+{t:'Asymmetric encryption',c:'lock',a:'public key cryptography',
+ g:'Two keys that belong together: one you hand out freely, one you never show anyone.',
+ p:['Anything locked with the public key can only be opened with the private one. So you publish the public key to the entire world and keep its partner to yourself.','Now anyone can send you something only you can read, with no secret ever being agreed in advance. It is slow, so in practice it is used only to agree a fast symmetric key, and then it steps aside.'],
+ l:'Posting open padlocks to everyone you know. They snap one shut on a box and send it back. You are the only person with the key.',
+ w:'This is the idea that made the secure internet possible. Everything with a padlock in the address bar starts here.'},
+
+{t:'Private key',c:'lock',
+ g:'The half you never share. Whoever holds it is you, as far as any machine is concerned.',
+ p:['It is what proves identity and what opens anything addressed to you. There is no password-reset email and no helpdesk.','Lose it and you lose access permanently. Let someone copy it and they are indistinguishable from you, until the key is revoked and everyone is told to stop trusting it.'],
+ l:'Not a password. A passport that cannot be reissued.',
+ w:'Almost every dramatic crypto theft story is, underneath, a private key that ended up somewhere it should not have been.'},
+
+{t:'Hashing',c:'lock',d:'hash',a:'hash function',
+ g:'A one-way blender. Any input in, fixed-length gibberish out, and no way back.',
+ p:['The same input always gives exactly the same output. Change one character and the output changes completely, beyond recognition. Crucially, there is no way to run it backwards and recover the input.','That is why a sensible site never stores your password. It stores the hash. When you log in it hashes what you typed and compares.'],
+ l:'Blending fruit. The same fruit gives the same smoothie every time. Nobody is getting the strawberries back.',
+ w:'When a site is breached and people say "the passwords were hashed", that is what they mean. Whether it actually helps depends entirely on salting and on using a deliberately slow hash.'},
+
+{t:'Salt',c:'lock',d:'salt',
+ g:'A pinch of randomness added to each password before hashing, so identical passwords stop looking identical.',
+ p:['Without it, everyone who picked the same password gets the same hash. Crack one and you have cracked all of them at once, and an attacker can precompute the answers in advance.','A salt is a random value stored next to each hash. It is not a secret. Its only job is to make every single hash unique, so attacking a million accounts costs a million times the work instead of one.'],
+ l:'Everyone in the building has the same front-door key. Salting gives every flat a different lock, so one stolen key stops being a master key.',
+ w:'Unsalted hashes are the difference between a breach that is survivable and a breach where every account falls in an afternoon.'},
+
+{t:'Encoding',c:'lock',d:'b64',a:'base64',
+ g:'Rewriting data in a different alphabet so it travels safely. Not protection. Not even slightly.',
+ p:['Base64 turns any data into plain letters, numbers and a couple of symbols, so it can pass through systems that only cope with text. Images inside emails travel this way.','It is reversible by anyone, instantly, with no key and no secret. It is encoding, not encryption. If something looks scrambled but no key was involved, it is not protected.'],
+ l:'Writing your diary in block capitals. It looks different. Everyone can still read it.',
+ w:'People mistake this for security constantly. Finding base64 "protecting" a password is a classic and slightly embarrassing audit finding.'},
+
+{t:'Entropy',c:'lock',d:'entropy',
+ g:'How unpredictable something is, counted in bits. Each extra bit doubles the guessing.',
+ p:['Entropy comes from how a thing was chosen, not from how complicated it looks. A password picked at random by software has it. A word with letters swapped for symbols mostly does not.','P@ssw0rd! looks fierce and is one of the first few thousand guesses, because every attacker already knows that trick. Four genuinely random words usually beat a short mangled one by a mile.'],
+ l:'A lock’s strength is not how ornate it looks. It is how many keys could possibly fit it.',
+ w:'This is the one idea that makes password advice make sense. Length chosen randomly beats cleverness chosen by a human, every time.'},
+
+{t:'Digital signature',c:'lock',
+ g:'Proof that a specific person sent this, and that not one character changed on the way.',
+ p:['The sender hashes the message and encrypts that hash with their private key. Anyone can decrypt it with the matching public key and compare against their own hash of what arrived.','If the two match, the message is untouched and really came from the holder of that key. If one byte changed, the hashes do not match and the signature fails.'],
+ l:'A wax seal that would also shatter if someone rewrote a sentence inside the letter.',
+ w:'This is how your phone knows an update really came from the people who make your phone.'},
+
+{t:'Certificate',c:'lock',a:'ssl certificate',
+ g:'A website’s ID card, signed by somebody your browser already trusts.',
+ p:['You open your bank’s site. How do you know it is your bank, and not a very good copy? The site hands your browser an ID card saying "I am yourbank.com".','That card is signed by an organisation your browser trusts. Your browser checks the signature. Good signature, you get the padlock. Bad signature, you get the full-page red warning.'],
+ l:'A passport. The document is only worth anything because of who issued it and the fact you can check.',
+ w:'The entire padlock is this one check, happening in a fraction of a second, every time, forever, without you seeing any of it.'},
+
+{t:'Certificate authority',c:'lock',a:'CA',
+ g:'The handful of organisations whose signature your browser accepts without asking.',
+ p:['Your browser ships with a list of them already trusted. They verify that whoever is asking for a certificate really controls that domain, then sign it.','It is trust by delegation, and it has an obvious weak point: a compromised or careless authority can sign a certificate for a site it has no business signing.'],
+ l:'You do not personally know the passport office. You trust the passport anyway, because you trust them.',
+ w:'This is why every certificate issued now gets written into public logs that anyone can read. Nobody fully trusts the trust.'},
+
+{t:'TLS',c:'lock',a:'ssl, https',v:'tls',
+ g:'The layer that makes the padlock. It encrypts the trip between you and a website.',
+ p:['Before any page content moves, your browser and the server agree on who the server is, using its certificate, and then agree on a shared key, using public-key maths. From then on everything is symmetric and fast.','All of it finishes in a fraction of a second, every page, invisibly. The S in HTTPS is this.'],
+ l:'Plain HTTP is a postcard: every postal worker on the route can read it. TLS is the envelope, plus a check that the house really is the one on the address.',
+ w:'It protects what you send and receive. It does not hide which site you visited — that still leaks in other places.'},
+
+{t:'End-to-end encryption',c:'lock',a:'E2EE',
+ g:'Only the two people talking can read it. Not even the company carrying the message.',
+ p:['The message is encrypted on your device and only decrypted on theirs. The service in the middle moves sealed boxes it cannot open.','Normal encryption protects the journey, but the company still has the contents on their servers and could hand them over. End-to-end means there is nothing readable to hand over.'],
+ l:'The courier is not just honest. The courier physically cannot open the parcel.',
+ w:'Metadata usually survives anyway. Who you messaged and when is often still perfectly visible.'},
+
+{t:'Key exchange',c:'lock',a:'diffie-hellman',
+ g:'Two strangers agreeing a shared secret in public, while everyone listens, without ever saying it.',
+ p:['Both sides send each other values that look useless on their own. Each combines what they received with something they kept private, and both arrive at the identical secret.','Someone recording the whole conversation has every message and still cannot work out what they agreed. It is genuinely one of the loveliest results in the field.'],
+ l:'You each mix a secret paint into a shared public colour and swap jars. You can both make the final shade. An observer with both jars cannot.',
+ w:'Done properly, recording today’s traffic and stealing the server’s key tomorrow does not let you read it. The agreed secret was never sent.'},
+
+{t:'Rainbow table',c:'lock',
+ g:'A gigantic pre-computed answer key for cracking unsalted hashes instantly.',
+ p:['Hashing cannot be reversed, but it can be looked up. Hash millions of common passwords in advance, store the results, and cracking becomes a search instead of a computation.','It collapses the moment salting is used, because every account now needs its own table. This is the entire reason salt exists.'],
+ l:'You cannot un-bake a cake. You can keep a photo of every cake you have ever baked, labelled with the recipe.',
+ w:'A neat illustration that "irreversible" and "unguessable" are two completely different claims.'},
+
+/* ---------------- ways in ---------------- */
+{t:'Vulnerability',c:'in',a:'vuln, bug, flaw',
+ g:'A weakness. On its own it is a possibility, not an event.',
+ p:['A mistake in code, a setting left open, a check somebody forgot. It sits there doing nothing until someone works out how to use it.','Three words get mixed up constantly: the vulnerability is the weakness, the exploit is the technique that uses it, the threat is whoever might come along and do it.'],
+ l:'An unlocked window is the vulnerability. Climbing through is the exploit. The burglar is the threat.',
+ w:'Getting these three straight is most of the way to reading any security writing without drowning.'},
+
+{t:'Exploit',c:'in',
+ g:'The working technique that turns a weakness into an actual break-in.',
+ p:['A vulnerability is theoretical until somebody builds the thing that reliably abuses it. That thing is the exploit, and it is usually fiddly, specific and brittle.','The gap between "this looks broken" and "I can reliably take over this machine" is where most of the real work sits.'],
+ l:'Everyone can see the window is unlocked. The exploit is the ladder, cut to the right length, that actually gets you up there.',
+ w:'When a report says a flaw is "exploited in the wild", it means this has stopped being theory and is happening to real people now.'},
+
+{t:'Payload',c:'in',
+ g:'The part that actually does the damage, once the break-in has worked.',
+ p:['Getting in and doing something are separate. The exploit opens the door. The payload is what walks through it: steal the files, encrypt the disk, open a channel back to the attacker.','The same exploit can carry completely different payloads, which is why the same flaw turns up in wildly different attacks.'],
+ l:'The exploit is picking the lock. The payload is whether they came to photograph your documents or set the place on fire.'},
+
+{t:'Zero-day',c:'in',a:'0-day',
+ g:'A flaw the people who could fix it have not heard about yet. Days to prepare: zero.',
+ p:['The name is the countdown. The vendor has had zero days of warning, so there is no patch, and nothing you can install to protect yourself.','They are rare, valuable, and quietly bought and sold. Once a fix ships, the clock starts the other way, as attackers race the people who have not updated yet.'],
+ l:'Not a window someone forgot to lock. A window nobody knew the building had.',
+ w:'This is why "just patch everything" is good advice and incomplete advice. Also why your friend named a game after it.'},
+
+{t:'Phishing',c:'in',
+ g:'A message built to make you hand over something, by looking like it came from somewhere real.',
+ p:['A login page that is pixel-perfect, an urgent note from your bank, a delivery you were half expecting. It does not attack the computer. It attacks the fact that you are busy and it looked right.','Urgency is the tell. Act now, verify immediately, your account will be closed today. Panic is the point, because panicking people do not check the address bar.'],
+ l:'Not breaking the lock. Dressing as the landlord and being handed the key.',
+ w:'It is still the most successful attack there is, against every level of technical skill. Nobody is above it, especially not on a bad day.'},
+
+{t:'Spear phishing',c:'in',
+ g:'Phishing written for one specific person, using real details about their life.',
+ p:['Ordinary phishing is a net thrown at a million people. This is aimed at you: your manager’s actual name, a project you are genuinely working on, the conference you genuinely attended.','All of it is assembled from things you posted publicly. It is slow to build and far, far more effective.'],
+ l:'The difference between a scam text sent to the whole country and a letter that mentions your daughter’s school.',
+ w:'The usual advice, "look for bad spelling", is useless here. These are well written, personal and plausible.'},
+
+{t:'Social engineering',c:'in',
+ g:'Hacking the person. No code required.',
+ p:['Phone the helpdesk sounding stressed and senior. Follow someone through a badge door with your arms full of coffee. Be the IT contractor nobody wants to be rude to.','It works on authority, helpfulness, urgency and awkwardness — the exact instincts that make someone pleasant to work with.'],
+ l:'Why pick the lock when you can be visibly struggling with a heavy box and let someone hold the door?',
+ w:'Most serious breaches start here, not with clever code. The weak point is almost never the encryption.'},
+
+{t:'Malware',c:'in',
+ g:'The umbrella word for any software written to do harm.',
+ p:['Everything underneath it is a category of malware: viruses, worms, trojans, ransomware, spyware, keyloggers. The word just means hostile software.','They are grouped by how they spread and what they do, and modern specimens happily combine several.'],
+ l:'"Vehicle". Useful, but it does not tell you whether you are looking at a bicycle or a lorry.'},
+
+{t:'Ransomware',c:'in',
+ g:'Malware that encrypts everything you own and sells you the key.',
+ p:['It gets in, quietly encrypts your files, and shows you a demand. Your data is still sitting there, perfectly intact, utterly unreadable.','The modern version steals a copy first and threatens to publish it, so that having good backups is no longer enough to make the problem go away.'],
+ l:'Someone puts your entire house inside a safe, in your living room, and rents you the combination.',
+ w:'It has taken down hospitals, pipelines and councils. The defence is boring and absolute: backups that are kept somewhere the attacker cannot reach.'},
+
+{t:'Trojan',c:'in',
+ g:'Malware that gets in by being something you actually wanted.',
+ p:['A cracked copy of expensive software, a handy little utility, a CV attachment. It does the advertised thing, which is why nothing feels wrong, and does its real job underneath.','You installed it. You clicked through the warning. That is the entire design.'],
+ l:'The horse. They did not breach the walls of Troy. The walls were opened from inside, by people who were delighted with their new statue.'},
+
+{t:'Keylogger',c:'in',
+ g:'Records every key you press, including the ones you thought nobody could see.',
+ p:['Software sitting quietly in the background, or occasionally a physical thing plugged in behind a desktop. Everything you type goes to someone else.','Passwords, messages, card numbers, the search you deleted before pressing enter. The dots on the screen hid nothing from it.'],
+ l:'Someone reading over your shoulder who never gets bored, never blinks, and keeps perfect notes.',
+ w:'It is why two-factor matters so much. Your password alone stops being enough to lose everything.'},
+
+{t:'Brute force',c:'in',
+ g:'Trying every possibility until something opens. No cleverness whatsoever.',
+ p:['Modern hardware guesses at a rate that is genuinely hard to picture, so short passwords fall in moments regardless of how odd they look.','Attackers rarely start blind. They try common passwords, then leaked ones, then variations with the predictable substitutions, long before they try everything.'],
+ l:'Not picking the lock. Standing there with every key ever cut, going one by one, very fast, forever.',
+ w:'This is the thing that entropy is measured against. Length is what turns "moments" into "longer than the sun has left".'},
+
+{t:'Credential stuffing',c:'in',
+ g:'Taking passwords leaked from one site and trying them everywhere else.',
+ p:['Breaches get dumped publicly all the time. Attackers take those email-and-password pairs and fire them at hundreds of other services automatically.','They are not attacking those services at all. They are relying on the fact that most people reuse one password nearly everywhere.'],
+ l:'Finding a key in the street with an address on the fob, then going round trying it on every door in the neighbourhood.',
+ w:'This is the single strongest argument for a password manager. Reuse is what makes one small breach reach your whole life.'},
+
+{t:'Man in the middle',c:'in',a:'MITM',v:'mitm',
+ g:'Someone sitting between you and the thing you think you are talking to.',
+ p:['They relay everything in both directions, so the conversation works perfectly and feels completely normal. They read it all, and can quietly change it.','Open airport wifi is the classic setting. TLS is specifically what makes this hard: the attacker cannot produce a valid certificate for a site they do not own.'],
+ l:'An interpreter who is translating faithfully for both of you, except for the one sentence about the bank details.',
+ w:'This is what the certificate check is actually protecting you from. That red warning page is the system working.'},
+
+{t:'SQL injection',c:'in',a:'SQLi',
+ g:'Typing database commands into a form, and the database running them.',
+ p:['A site builds a database query by gluing your input into a sentence. If it glues carelessly, you can type something that ends the sentence early and starts a new command.','The database has no way to tell the difference. It was handed one instruction and it obeys all of it.'],
+ l:'A form that says "name:" and you write "Devanshi, and also hand over the entire filing cabinet". A careless clerk does both.',
+ w:'Decades old, extremely well understood, and still breaking real companies, because one unglued query is all it takes.'},
+
+{t:'Cross-site scripting',c:'in',a:'XSS',
+ g:'Getting your code to run inside someone else’s page, in someone else’s browser.',
+ p:['A site takes something you typed — a comment, a profile name, a search term — and shows it to other people without stripping out code. Your code then runs with all the trust of that site.','That means it can read their session, act as them, and change what they see, all while the address bar shows the real, legitimate site.'],
+ l:'Slipping a fake notice into a company’s own letterhead. It is not the wording people trust. It is the paper.',
+ w:'It is one of the most common web flaws there is, and the first thing people test on any page that shows user text back.'},
+
+{t:'Privilege escalation',c:'in',
+ g:'Getting in as nobody in particular, then becoming the administrator.',
+ p:['First access is usually tiny: one low-privilege account, one forgotten service. Escalation is the step that turns that foothold into control of everything.','Attackers expect to arrive somewhere boring. The whole craft is moving from boring to total.'],
+ l:'Getting hired to clean the lobby, then finding the master key in an unlocked drawer.',
+ w:'This is why "that account can barely do anything" is a weak defence on its own, and why least privilege is taken so seriously.'},
+
+{t:'DDoS',c:'in',a:'denial of service',
+ g:'Burying a service in so much traffic that real people cannot get through.',
+ p:['Nothing is broken into and nothing is stolen. The service is simply overwhelmed until it falls over or becomes unusable.','The traffic comes from a huge number of machines at once, usually hijacked ones, which is what makes blocking it so awkward.'],
+ l:'Ten thousand people phoning a shop at once, saying nothing. Nobody is robbed. Nobody can get served either.'},
+
+{t:'Botnet',c:'in',
+ g:'A private army of other people’s machines, taking orders from one place.',
+ p:['Home routers, cameras, fridges, laptops — anything infected and quietly waiting. The owners carry on with their lives, unaware.','On command they all do the same thing at once: flood a target, send spam, or grind through password guesses.'],
+ l:'Thousands of strangers who do not know they have agreed to be somebody’s workforce.',
+ w:'This is where enormous attack traffic comes from, and the main reason cheap internet-connected devices with default passwords are a genuine public problem.'},
+
+{t:'Supply chain attack',c:'in',
+ g:'Attacking something trusted that is inside thousands of products at once.',
+ p:['Modern software is assembled from hundreds of pieces written by other people. Compromise one popular piece and you are inside everything that uses it, instantly.','It is efficient and brutal, because the victims did nothing wrong. They installed an update, exactly as they were supposed to.'],
+ l:'Not poisoning one restaurant. Poisoning the supplier that delivers to four hundred of them.',
+ w:'It is one of the hardest things to defend against, because the defence is to distrust things you depend on completely.'},
+
+/* ---------------- ways to stop it ---------------- */
+{t:'Firewall',c:'stop',
+ g:'A rule-keeper deciding which traffic is allowed in or out.',
+ p:['It checks traffic against a list of rules and permits or drops it. The good default is to block everything and then allow only what is genuinely needed.','It controls what can reach a machine. It does not inspect whether what gets through is honest.'],
+ l:'A bouncer with a guest list. Excellent at keeping out people who are not on it. No opinion on what those people do once inside.'},
+
+{t:'VPN',c:'stop',
+ g:'An encrypted tunnel to somewhere else, so your traffic appears to start there.',
+ p:['Your traffic goes encrypted to the VPN’s server and continues from there. Your network provider sees that you are using a VPN, not where you went. Sites see the VPN’s address, not yours.','It genuinely helps on untrusted wifi and for reaching things from the wrong country. It does not make you anonymous, and you have moved your trust rather than removed it — now the VPN company sees everything.'],
+ l:'Posting letters from a different city. The post office there still watches you drop them in.',
+ w:'VPN advertising is wildly oversold. Logged into your own accounts, you are exactly as identified as before.'},
+
+{t:'Two-factor authentication',c:'stop',a:'2FA, MFA',
+ g:'Needing something you know and something you have, so a stolen password is not enough.',
+ p:['A password is something you know. A code from your phone or a physical key is something you have. Requiring both means a leaked password alone gets nobody in.','Not all second factors are equal. SMS codes can be stolen by taking over your phone number; an app or a hardware key is much stronger.'],
+ l:'Your bank card is useless without the PIN, and the PIN is useless without the card.',
+ w:'If you only ever do one thing from this entire book: turn it on for your email. Your email is the reset button for everything else you own.'},
+
+{t:'Password manager',c:'stop',
+ g:'One strong password guarding a vault of hundreds of random ones you never have to know.',
+ p:['It generates a long random password for every single site, stores them encrypted, and fills them in. You memorise exactly one thing.','It also quietly defeats phishing: it refuses to autofill on a lookalike domain, because it checks the address properly, which a tired human at 1am does not.'],
+ l:'Not one key that opens everything. A locked key cabinet with a different key for every door.',
+ w:'"All my eggs in one basket" is the usual objection. The alternative is the same password in forty baskets, and several of those baskets have already been stolen.'},
+
+{t:'Patch',c:'stop',a:'update',
+ g:'The fix. And, loudly, the public announcement of what was broken.',
+ p:['A patch repairs a known flaw. The awkward part is that publishing it tells everyone precisely what was wrong and where to look.','So the moment a patch ships, attackers start hunting for machines that have not applied it. That window is where a huge amount of real damage happens.'],
+ l:'The council announcing which brand of lock has a flaw, at the same moment they start replacing them.',
+ w:'This is why "update later" is a decision with a cost, not just an annoyance.'},
+
+{t:'Sandbox',c:'stop',
+ g:'Running something inside a sealed box, so that if it misbehaves it ruins only the box.',
+ p:['The code gets a fake, restricted world: no access to your files, your network or the rest of the system. Every browser tab is one.','It is how suspicious software can be opened on purpose and watched, and how one bad web page does not own your laptop.'],
+ l:'Letting a stranger cook, in a kitchen with no doors to the rest of the house.'},
+
+{t:'Least privilege',c:'stop',
+ g:'Everyone and everything gets exactly the access it needs, and absolutely nothing spare.',
+ p:['The intern account cannot read payroll. The printer service cannot touch the customer database. Not out of suspicion — because accounts get stolen.','When something is eventually compromised, the damage is bounded by whatever that account could already do.'],
+ l:'A hotel cleaner’s keycard opens guest rooms and the supply cupboard. It does not open the safe or the accounts office.',
+ w:'It is the single most effective structural defence there is, and the one people skip because it is tedious.'},
+
+{t:'Zero trust',c:'stop',
+ g:'Stop treating "inside the network" as proof of anything. Verify every single time.',
+ p:['The old model was a hard shell around a soft middle: get past the firewall and you were trusted. That collapsed once everyone worked from cafés and everything moved to the cloud.','Zero trust assumes the attacker may already be inside. Every request proves who it is and whether it is allowed, every time, regardless of where it came from.'],
+ l:'Not a guarded gate with free run of the campus. Every door checks your badge, including the ones deep inside.'},
+
+{t:'Honeypot',c:'stop',
+ g:'A fake thing left out on purpose, so that touching it proves someone is up to no good.',
+ p:['A server that looks juicy and neglected, or a fake set of credentials nobody legitimate would ever use. It has no real function at all.','That is what makes it such a clean alarm: there is no innocent reason to be there. One touch, one alert, nearly no false positives.'],
+ l:'Leaving a wallet on the table with a tracker in it. Nobody picks it up by accident.'},
+
+{t:'Air gap',c:'stop',
+ g:'No network connection at all. The strongest isolation, and the most inconvenient.',
+ p:['The machine is physically not connected to anything. Nuclear controls, vote tallies, offline backups of critical keys.','It is not magic. Data still has to arrive somehow, and USB sticks have carried attacks across air gaps into some very serious places.'],
+ l:'A room with no doors, which means every single thing that goes in has to come through the window, carried by someone.'},
+
+{t:'Defence in depth',c:'stop',
+ g:'Assume every single layer will eventually fail, and stack them anyway.',
+ p:['No one control is trusted to hold. There is a firewall and least privilege and 2FA and monitoring and backups, so that one failure is not the whole story.','The design question stops being "will this hold" and becomes "what happens when this does not".'],
+ l:'A castle has a moat and walls and a gate and guards. Not because any one of them is bad. Because one of them will be.'},
+
+/* ---------------- the job ---------------- */
+{t:'Red team',c:'job',
+ g:'The people paid to attack you, properly, on purpose.',
+ p:['They behave like a real adversary: break in, move around, see how far they get and how long before anyone notices. The point is not a list of flaws, it is the story of how deep an intruder could actually go.','Done well, it is uncomfortable and extremely useful.'],
+ l:'Hiring a burglar to rob you and then explain, in detail, exactly how they did it.'},
+
+{t:'Blue team',c:'job',
+ g:'The people defending, detecting and responding. Most of the actual field.',
+ p:['Watching logs, tuning alerts, hunting for things that look wrong, cleaning up when something is wrong. Permanent, unglamorous, essential.','Attacking is a project with an end date. Defending is a shift that never finishes.'],
+ l:'Red team is the burglar. Blue team is everyone who has to notice, respond, and still be there on Tuesday.',
+ w:'Far more jobs exist here than in red teaming, and the field talks about it far less.'},
+
+{t:'Purple team',c:'job',
+ g:'Attack and defence in the same room, deliberately, instead of scoring points off each other.',
+ p:['The red side attacks while the blue side watches live, so you learn immediately which techniques produced an alert and which sailed through unnoticed.','It turns a once-a-year report into an actual feedback loop.'],
+ l:'The burglar and the guard walking the building together, pointing at things.'},
+
+{t:'Penetration test',c:'job',a:'pentest',
+ g:'A bounded, authorised attempt to break in, ending in a report.',
+ p:['Agreed scope, agreed dates, written permission. The tester finds what they can and writes it up with severities and fixes.','Narrower than a red team exercise, which tests whether you would notice. A pentest mostly tests whether the holes are there.'],
+ l:'A building inspection, where the inspector is allowed to actually try the windows.',
+ w:'The permission is not a formality. The same actions without it are a crime.'},
+
+{t:'Capture the flag',c:'job',a:'CTF',
+ g:'Security as a puzzle competition. Deliberately broken systems, hidden strings to find.',
+ p:['Each challenge hides a "flag", a specific string you can only reach by actually solving it. Submit it, score, move on.','It is how most people in this field genuinely learned, because you cannot bluff a flag. Either you got in or you did not.'],
+ l:'An escape room that teaches you lock-picking, and will not open on a convincing argument.',
+ w:'It is also a completely legal place to practise attacking things, which matters more than it sounds.'},
+
+{t:'Threat model',c:'job',
+ g:'Deciding who you are actually defending against, before buying any locks.',
+ p:['Four questions: what are you protecting, who wants it, what can they do, and what happens if they get it. Everything else follows from the answers.','Protecting a diary from a sibling and protecting a source from a government are not the same problem, and the same advice cannot serve both.'],
+ l:'You would not fit the same locks to a garden shed and a bank, and you would look ridiculous doing either backwards.',
+ w:'Most bad security advice is advice from somebody else’s threat model, repeated without the context.'},
+
+{t:'Attack surface',c:'job',
+ g:'Every single way in. Everything exposed is part of it.',
+ p:['Every login page, API, port, plugin, third-party library and employee laptop. If it can be reached, it counts.','It grows quietly, which is the problem. A forgotten test server from two years ago is still on the surface and nobody is watching it.'],
+ l:'Every door, window, letterbox and vent. Including the one you bricked over and stopped thinking about.'},
+
+{t:'Blast radius',c:'job',
+ g:'How much goes down with it, when one thing is compromised.',
+ p:['Not whether something will be breached, but how far the damage reaches when it is. One account, one service, or everything.','Least privilege and segmentation are the tools for shrinking it. It is the design question behind most serious security architecture.'],
+ l:'A fire door does not stop fires. It decides whether you lose one room or the building.'},
+
+{t:'CVE',c:'job',
+ g:'A public ID number for a specific known vulnerability, so everyone means the same thing.',
+ p:['They look like CVE-2026-12345. One number, one flaw, referenced identically by every vendor, scanner and advisory on earth.','Before this, the same bug had five different names depending on who was describing it, which made coordinating anything miserable.'],
+ l:'A catalogue number. Dull, and the reason anybody can find the right thing at all.'},
+
+{t:'SOC',c:'job',a:'security operations centre',
+ g:'The room, or the team, watching everything all the time.',
+ p:['Alerts land, humans triage them, most are noise, a few are not. Shift work, often around the clock.','The hard part is volume. Real attacks arrive buried inside thousands of boring, almost-identical notifications.'],
+ l:'The wall of monitors in the film. Vastly less dramatic, far more spreadsheets.',
+ w:'A lot of first jobs in this field start here, because it is where you see the most real traffic fastest.'},
+
+{t:'Incident response',c:'job',a:'IR',
+ g:'What you do once it has already happened, hopefully from a written plan.',
+ p:['Work out what is going on, stop it spreading, remove it, restore things, and write down honestly what went wrong. In roughly that order.','The deciding factor is almost always whether a plan existed beforehand. Three in the morning is a terrible time to start deciding who phones the lawyers.'],
+ l:'A fire drill. Pointless-feeling, right up to the ten minutes where it is the only thing that matters.'},
+
+{t:'OWASP',c:'job',
+ g:'A nonprofit whose free lists of common flaws became the industry’s shared reference.',
+ p:['Their Top 10 lists name the mistakes that break real applications most often. Job postings reference them. Reports map findings to them.','They now publish lists for web apps, for AI systems, and for AI agents, which is how fast that corner moved.'],
+ l:'The standard checklist everyone in the trade has pinned up, and quietly checks against.'},
+
+/* ---------------- ai security ---------------- */
+{t:'Prompt injection',c:'ai',
+ g:'Hiding an instruction where an AI will read it, and watching the AI obey.',
+ p:['A language model reads everything it is given as one stream of text. It cannot reliably tell your instructions apart from text it found inside a document or a web page.','So an attacker hides an instruction in that content. The model reads it and may simply follow it. Nobody touched the model or the system — they just planted words somewhere they would be read.'],
+ l:'Leaving a note on your colleague’s desk signed "from the boss". They do it, because it arrived in the right place.',
+ w:'It is the hardest unsolved problem in AI security right now, and it is the entire premise of the game you built.'},
+
+{t:'Indirect prompt injection',c:'ai',
+ g:'The same trick, except the instruction is waiting in content the AI goes and fetches by itself.',
+ p:['You ask an assistant to summarise a web page. Hidden in that page, in white text nobody can see, is an instruction. The assistant reads the page and reads the instruction too.','You never typed anything hostile. The attacker never spoke to the assistant. They just left it somewhere they knew one would eventually go.'],
+ l:'Not slipping a note to the messenger. Writing it on a wall you know the messenger walks past every day.',
+ w:'This is why an AI that can browse, read files and take actions is so much harder to secure than one that only talks.'},
+
+{t:'Jailbreak',c:'ai',
+ g:'Talking a model out of its own rules, usually by changing the frame rather than the request.',
+ p:['Roleplay, hypotheticals, "my grandmother used to read me…", claiming to be a researcher, or burying the real request in something else entirely.','It is different from prompt injection: a jailbreak is the user working on the model directly. Injection is a third party getting their words in.'],
+ l:'Not picking the lock. Convincing the guard that today the rules work differently.'},
+
+{t:'Guardrails',c:'ai',
+ g:'Checks around a model, because the model itself cannot be trusted to hold a line.',
+ p:['Filters on what goes in, filters on what comes out, rules about which tools can be called and which actions need a human to approve.','The key idea is that they sit outside the model. If the only thing stopping a bad outcome is the model deciding not to, there is nothing there at all.'],
+ l:'Not asking the driver to be careful. Fitting the car with brakes that work regardless.',
+ w:'The thing that impresses people who do this professionally is a system where the model got fooled and it still did not matter.'},
+
+{t:'RAG',c:'ai',a:'retrieval augmented generation',
+ g:'Giving a model relevant documents to read, instead of trusting it to remember.',
+ p:['The system searches your documents, pulls the few passages that look relevant, and hands them to the model along with the question. The model answers using what is in front of it.','It makes answers more current and more checkable. It also means the model is now reading documents, which is exactly where indirect prompt injection lives.'],
+ l:'An open-book exam, where the model is also obliged to believe whatever is in the book.'},
+
+{t:'AI agent',c:'ai',
+ g:'A model that does not just answer, but is given tools and allowed to act.',
+ p:['Send the email, run the script, book the thing, edit the file. It decides which tool to use and when, in a loop, usually without a human reading each step.','Everything about the risk changes here. A wrong answer is embarrassing. A wrong action sends a real email to a real person.'],
+ l:'The difference between an advisor who tells you what to do, and an assistant with your card and your keys.'},
+
+{t:'MCP',c:'ai',a:'model context protocol',
+ g:'A common standard for plugging tools and data into AI assistants.',
+ p:['Before it, every tool needed custom wiring for every assistant. The protocol makes a tool describable once and usable by many.','The assistant learns what a tool does by reading its written description. Which is a reasonable design, and also the whole problem below.'],
+ l:'A universal plug socket. Wonderful, and it means anything can be plugged in.'},
+
+{t:'Tool poisoning',c:'ai',
+ g:'Hiding instructions inside a tool’s own description, where the AI is guaranteed to read them.',
+ p:['An assistant decides which tool to use by reading each tool’s description. That description is just text, and the model reads it with the same trust as anything else.','So a malicious tool writes instructions into its own description. The model reads them while deciding what to do, and may follow them. It never had to be called.'],
+ l:'A label on a jar that reads "sugar — and while you are here, unlock the back door".',
+ w:'It is prompt injection aimed at the plumbing rather than the conversation, and it is a live concern as these integrations spread.'},
+
+{t:'Hallucination',c:'ai',
+ g:'A model stating something false with exactly the same confidence as something true.',
+ p:['These systems predict plausible text. Plausible and correct overlap most of the time, which is precisely what makes the gap dangerous.','There is no internal flag for "I am guessing now". Invented citations, invented functions and invented case law all arrive in the same calm voice as the facts.'],
+ l:'A student who never leaves an answer blank, and is never visibly unsure.',
+ w:'It is the reason a tool that fetches real sources and shows them beats one that recites from memory. You already knew that — it is why Corpus works.'},
+
+/* ---------------- added ---------------- */
+{t:'Data broker',c:'watch',
+ g:'A company whose entire business is buying and selling files about people.',
+ p:['They gather from loyalty cards, app permissions, public records, leaked databases and the tracking web, then merge it into a profile with a price on it.','You are not their customer. You are their stock. Most people have never heard the name of a single one of the companies holding a file on them.'],
+ l:'A shop you have never walked into, selling a biography of you that you have never read.',
+ w:'This is where tracking data ends up. It is also why one harmless-seeming permission on one app is never really about that one app.'},
+
+{t:'Personal data',c:'watch',a:'PII',
+ g:'Anything that can be traced back to a specific living person. Wider than most people assume.',
+ p:['Obvious things count: name, address, phone number, ID numbers. So do less obvious ones: an IP address, a device identifier, a photograph, a voice.','It is also cumulative. Three pieces that identify nobody on their own can identify exactly one person together, and the law in most places treats the combination as personal data too.'],
+ l:'Not just your name badge. Anything that lets someone pick you out of the room.',
+ w:'Nearly every privacy law on earth, India’s DPDP Act included, is built on top of this one definition. Get it wrong and everything downstream is wrong.'},
+
+{t:'Checksum',c:'lock',
+ g:'A short fingerprint of a file, so you can tell whether it arrived intact.',
+ p:['Run the file through a hash, compare the result with the one the publisher posted. Same value, same file, byte for byte.','It catches accidental corruption easily. It only catches deliberate tampering if you got the expected value from somewhere the attacker could not also edit.'],
+ l:'Counting the pages before and after posting the manuscript. Useful against the post office. Useless if the forger also wrote the note saying how many pages there should be.'},
+
+{t:'Authentication',c:'stop',a:'authn, identity',
+ g:'Proving who you are.',
+ p:['A password, a code from your phone, a fingerprint, a hardware key. All of it answers one question: are you who you claim to be?','That is the whole job. It says nothing at all about what you are then allowed to do.'],
+ l:'Showing ID at the door.',
+ w:'It gets confused with the next word constantly, including in exams, and keeping them apart makes a surprising amount of this field click into place.'},
+
+{t:'Authorization',c:'stop',a:'authz, permissions',
+ g:'Deciding what you are allowed to do, once it is established who you are.',
+ p:['You are definitely you. Fine. Can you read this file, delete this record, approve this payment?','Breaking it is a whole category of bug: being logged in as yourself and simply changing a number in the address bar to see somebody else’s order.'],
+ l:'The ID at the door got you in. It did not get you behind the bar.',
+ w:'Authentication is who. Authorization is what. Most serious web flaws are failures of the second one, not the first.'},
+
+{t:'Passkey',c:'stop',
+ g:'Logging in with a key your device holds, instead of a secret you have to remember and retype.',
+ p:['Your device keeps a private key and hands the site a public one. To log in, your device proves it holds the private half, usually after you unlock it with a fingerprint or face.','There is no password to leak, no password to reuse, and nothing a fake site can capture, because the key only works on the real domain.'],
+ l:'Instead of whispering a secret the barman could repeat to someone else, you show a key only your own pocket can produce.',
+ w:'It is the first thing in decades that genuinely kills phishing for the account using it, which is why it is spreading fast.'},
+
+{t:'Single sign-on',c:'stop',a:'SSO, OAuth, sign in with Google',
+ g:'Using one account to get into many services, without handing over its password.',
+ p:['Pressing "sign in with Google" does not give the site your Google password. Google confirms who you are and hands over a token saying so, with whatever access you approved.','It means fewer passwords, which is good. It also means one account becomes the key to dozens of others, which is a very concentrated thing to lose.'],
+ l:'A festival wristband from one gate that every stage accepts. Lose the wristband and you lose the whole festival.',
+ w:'Whatever account you sign in with everywhere deserves your strongest protection. That is usually your email, and usually the one people secure least.'},
+
+{t:'Backup',c:'stop',
+ g:'A copy you can restore from. Only real once you have actually tested restoring it.',
+ p:['The common rule is three copies, on two different kinds of storage, with one of them somewhere else entirely. The last part is what survives fire, theft and ransomware.','A backup that is always connected is not a backup. Ransomware encrypts that too, along with everything else it can reach.'],
+ l:'A spare key is only reassuring if it is not hanging on the same hook as the one you lost.',
+ w:'It is the single defence that works against ransomware, hardware death and your own mistakes at once. It is also the one everyone skips until the week after they needed it.'},
+
+{t:'Hardening',c:'stop',
+ g:'Stripping a system down to only what it actually needs to do.',
+ p:['Turn off unused services, close unused ports, delete default accounts, change default passwords, remove software nobody uses.','Everything switched on is something that can be attacked, and anything you can switch off stops being your problem entirely.'],
+ l:'Not adding more locks. Bricking up the doors you never use.'},
+
+{t:'Virus',c:'in',
+ g:'Malware that attaches itself to a file and spreads when that file is run.',
+ p:['It cannot travel on its own. It needs a host file and it needs a human to open it, copy it or share it.','The word gets used for all malware, but strictly it means this one spreading method, and it is less common now that we share links instead of files on sticks.'],
+ l:'A cold. It needs people to keep shaking hands.'},
+
+{t:'Worm',c:'in',
+ g:'Malware that spreads by itself, with nobody clicking anything.',
+ p:['It finds other machines over the network, exploits a flaw, copies itself across and repeats. No host file, no human required.','That is why worms produce the famous outbreak stories: the spread is exponential and it happens in hours.'],
+ l:'An airborne infection. Nobody had to shake hands with anybody.'},
+
+{t:'Spyware',c:'in',
+ g:'Malware whose whole job is watching, quietly, for as long as possible.',
+ p:['Messages, location, camera, microphone, files. It is built to be boring and invisible, because being noticed ends the mission.','The serious commercial kind is sold to governments and has been used against journalists, lawyers and activists.'],
+ l:'Not a burglar. A lodger who never leaves and takes notes.'},
+
+{t:'Backdoor',c:'in',
+ g:'A way back in that bypasses the normal checks, left there deliberately.',
+ p:['Sometimes an attacker installs one so that fixing the original hole does not lock them out. Sometimes a developer leaves one for convenience and forgets it.','Either way it is an entrance that answers to nobody’s login screen.'],
+ l:'A key taped under the back step. It does not matter how good the front door is.'},
+
+{t:'Exfiltration',c:'in',
+ g:'Getting the stolen data out of the building without anyone noticing.',
+ p:['Breaking in is only half of it. The data still has to leave, and leaving is the noisiest part of the whole operation.','So it goes slowly, in small pieces, disguised as ordinary traffic, often to a cloud service the company already uses and already trusts.'],
+ l:'Photographing the files is easy. Walking out past reception carrying them is the hard part.',
+ w:'This is where defenders often get their only real chance, which is why anyone watching network traffic cares so much about what leaves, not just what arrives.'},
+
+{t:'Lateral movement',c:'in',
+ g:'Spreading sideways from the first machine to the ones that actually matter.',
+ p:['The first foothold is almost always something unimportant: a reception laptop, a forgotten test server. Nobody keeps the valuable things there.','So the attacker quietly hops from machine to machine, collecting credentials as they go, until they reach something worth the trip. It can take weeks and it is meant to look like normal activity.'],
+ l:'They came in through the unlocked window of the garden shed. The shed was never the point.'},
+
+{t:'Command and control',c:'in',a:'C2',
+ g:'The channel malware uses to phone home and receive orders.',
+ p:['Once it is installed, it needs instructions. So it checks in with a server the attacker runs, asks what to do, and sends back whatever it has collected.','It hides in ordinary-looking traffic, and often waits long stretches between check-ins specifically so it does not stand out.'],
+ l:'A sleeper agent ringing the same number every Tuesday to see whether there is any work on.',
+ w:'Spotting that traffic is one of the most reliable ways to find an infection that nothing else caught.'},
+
+{t:'Typosquatting',c:'in',
+ g:'Registering the misspelling, and waiting for people to make it.',
+ p:['One letter off a real domain, or a swapped pair, or a lookalike character from another alphabet. The page is a perfect copy and the address is nearly right.','The same trick works on software libraries: a package named almost exactly like a popular one, which developers install by accident and ship into real products.'],
+ l:'A shop next door with almost the right name, hoping you are walking fast and not reading carefully.',
+ w:'This is one reason a password manager beats your own eyes. It checks the domain exactly, and it will not fill in a password on the wrong one.'},
+
+{t:'Smishing and vishing',c:'in',
+ g:'Phishing by text message and phishing by phone call.',
+ p:['Same attack, different doorway. A text about a failed delivery or a blocked card, or a call from somebody calm and official-sounding about suspicious activity on your account.','Phone numbers are trivially faked, so your screen can genuinely show your bank’s real number while a stranger is talking.'],
+ l:'The same con, moved from your letterbox to your pocket, where you are more rushed and less careful.',
+ w:'The rule that defeats nearly all of it: hang up and ring back on a number you found yourself, never one they gave you.'},
+
+{t:'Insider threat',c:'in',
+ g:'Damage done by somebody who was supposed to be there.',
+ p:['An employee who copies the customer list on the way out, or an administrator with a grudge. Often, though, it is nobody malicious at all — just someone tired who sent the wrong file to the wrong person.','Every perimeter defence in the world assumes the danger is outside. This one walks in through the front with a valid badge.'],
+ l:'The locks were excellent. They were all facing outwards.',
+ w:'This is the strongest practical argument for least privilege, and for logs that even administrators cannot quietly edit.'},
+
+{t:'Port',c:'net',
+ g:'A numbered doorway on a machine, so one address can run many services at once.',
+ p:['One machine, one address, but dozens of things it might be doing. Ports keep them apart: web traffic usually arrives at 443, mail and everything else at their own numbers.','Every port left open and listening is another way in, which is why scanning for open ports is often an attacker’s very first move.'],
+ l:'One building, one street address, numbered doors around the side. Web deliveries to door 443, post to door 25.'},
+
+{t:'Protocol',c:'net',
+ g:'An agreed set of rules for how two machines talk, so they can understand each other at all.',
+ p:['Who speaks first, what a request looks like, what counts as a reply, how the conversation ends. HTTP is one, for web pages. There are hundreds.','Nothing on a network works without both ends agreeing in advance. The S in HTTPS just means the same conversation, wrapped in encryption.'],
+ l:'Not the words. The etiquette: who speaks first, what counts as an answer, how you know it is over.'},
+
+{t:'API',c:'net',a:'application programming interface',
+ g:'A doorway built for other programs instead of for people.',
+ p:['A website is a door for humans, with buttons. An API is a door for software: send a precise request, get back precise data, no screen involved.','It is how an app shows you a map it did not draw, or charges a card it does not hold. It is also a door people forget to guard as carefully as the human one.'],
+ l:'The front counter is for customers. The loading bay is for suppliers. Both get you into the building.',
+ w:'Loads of serious leaks are an API that happily answered a question nobody checked the asker was entitled to ask.'},
+
+{t:'API key',c:'net',a:'token, secret',
+ g:'A long string that proves which program is calling. Effectively a password for software.',
+ p:['Whoever holds it can act as your application, and usually spend your money doing it. It belongs in a server’s private settings, never in anything a user can read.','Keys get committed to public code repositories constantly. Bots scan for them within minutes, and people wake up to very large bills.'],
+ l:'A company credit card with no photo and no PIN. It works for whoever is holding it.',
+ w:'If a key ever reaches somewhere public, the only real fix is to cancel it and issue a new one. Deleting the post does nothing.'},
+
+{t:'Proxy',c:'net',
+ g:'A middleman that makes requests on your behalf, so the destination sees it rather than you.',
+ p:['Your request goes to the proxy, the proxy fetches the thing, the proxy hands it back. The site at the other end only ever saw the proxy.','Companies run them in the other direction too, to filter and log what their staff reach.'],
+ l:'Sending somebody else into the shop with your list.',
+ w:'A VPN is a proxy for your whole connection, with the trip to it encrypted. Both move your trust rather than removing it.'},
+
+{t:'Tor',c:'net',a:'onion routing',
+ g:'Bouncing your traffic through several volunteer relays so no single one knows both ends.',
+ p:['Each relay in the chain peels off one layer of encryption and knows only who handed it over and who to hand it to next. The first knows you but not your destination; the last knows the destination but not you.','It is slow, by design, because the privacy comes from the detour.'],
+ l:'Passing a sealed note through a line of strangers, each of whom only ever sees the person either side of them.',
+ w:'Mostly known for the dark web, mostly used by people who need to read or publish without being identified.'},
+
+{t:'Root',c:'net',a:'admin, superuser',
+ g:'The account with no restrictions. It can do anything, including destroy everything.',
+ p:['Normal accounts are fenced in. Root is not fenced at all, which is why installing software and changing system settings needs it.','It is also why nobody sensible works as root all day. One mistyped command stops being an error message and becomes an incident.'],
+ l:'The master key for the whole building, including the rooms you did not know existed.',
+ w:'"Getting root" is the usual goal of privilege escalation, and the usual headline of a serious compromise.'},
+
+{t:'Shell',c:'net',a:'terminal, command line',
+ g:'The text window where you type commands straight at the machine.',
+ p:['No buttons, no menus. You type what you want, it does it, and it answers in text. PowerShell is one, bash is another.','Attackers want one on your machine more than almost anything else, because a shell is complete control in a form that is easy to automate.'],
+ l:'Talking to the machine instead of pointing at it.',
+ w:'The phrase "got a shell" in a report means somebody is running commands on that box. It is rarely followed by good news.'},
+
+{t:'CIA triad',c:'job',a:'confidentiality integrity availability',
+ g:'The three things security is trying to protect. Nearly every incident is a failure of one of them.',
+ p:['Confidentiality: only the right people can read it. Integrity: nobody changed it behind your back. Availability: it is there when you need it.','A leak breaks the first. Tampering breaks the second. Ransomware and a flood of junk traffic both break the third. They also pull against each other — the most confidential system is one nobody can get into, including you.'],
+ l:'A locked room nobody can enter is wonderfully confidential and completely useless.',
+ w:'If you remember one framework from any course, make it this one. It is the question behind every design argument in the field.'},
+
+{t:'Data breach',c:'job',
+ g:'When data that was supposed to stay in reaches somebody it was not meant to.',
+ p:['Not always a dramatic break-in. A misconfigured storage bucket left public, a laptop on a train, a spreadsheet emailed to the wrong person — all breaches.','Most places now have a legal clock: discover it, and you have a fixed and short window to tell the regulator and often the people affected.'],
+ l:'It does not matter whether the window was forced or simply left open. What is outside is outside.'},
+
+{t:'OSINT',c:'job',a:'open source intelligence',
+ g:'Building a picture of a target from things that are already public.',
+ p:['Job adverts naming internal software, staff photos with badges visible, conference talks, public records, metadata left in documents, holiday posts.','Nothing is hacked and nothing is illegal. It is just assembled, and it is usually the first phase of anything serious.'],
+ l:'Nobody broke in. Somebody read the notice board, the local paper and your public calendar.',
+ w:'It is also a real job, and a good one to understand, because it shows exactly how much a company gives away without noticing.'},
+
+{t:'Bug bounty',c:'job',
+ g:'A company paying outsiders to find flaws and report them, instead of selling them.',
+ p:['There is a published scope saying what you may test and what you may not, and a scale of payouts by severity. Stay inside the scope and you are protected; step outside and you are not.','It is a legitimate way to earn from this skill, and a very common way into the field without a traditional job first.'],
+ l:'A standing reward for telling the shop about the broken lock, set high enough to beat what a burglar would pay you to keep quiet.'},
+
+{t:'MITRE ATT&CK',c:'job',
+ g:'A free catalogue of what real attackers actually do, step by step.',
+ p:['Organised by stage — getting in, staying in, moving sideways, getting data out — with named techniques underneath, drawn from real observed attacks rather than theory.','Defenders use it to check which techniques they could actually detect. The honest answer is usually "fewer than we thought".'],
+ l:'Not a list of burglars. A list of every method burglary has been observed to use, so you can check which ones your alarm would notice.'},
+
+{t:'SIEM',c:'job',
+ g:'The system that collects logs from everywhere and shouts when something looks wrong.',
+ p:['Every server, laptop, firewall and application produces logs separately, and separately they say nothing. Pulled into one place, patterns appear.','Then you write rules: this login from a new country, right after fifty failed attempts, right before a large upload. The hard part is not collecting. It is not drowning.'],
+ l:'One desk where every CCTV feed in the building finally arrives, so somebody can notice the same face on three of them.',
+ w:'This is what a lot of blue team work actually is, day to day, and why log quality matters more than tool choice.'},
+
+{t:'Deepfake',c:'ai',
+ g:'A convincing fake of a real person’s face or voice, generated rather than filmed.',
+ p:['A few seconds of someone’s voice from a video call or a social post is now enough to clone it well enough to fool a colleague under time pressure.','The expensive attacks are already real: staff authorising transfers because a familiar voice, or a familiar face on a video call, told them to.'],
+ l:'A forged signature that also sounds like them and looks like them, and arrives in a hurry.',
+ w:'The defence is not better eyes. It is a process: verify anything unusual on a second channel you chose, every single time, no matter who it appears to be.'},
+
+{t:'Data poisoning',c:'ai',
+ g:'Corrupting what a model learns from, so the damage is built in before anyone uses it.',
+ p:['Models are trained on enormous scraped datasets. Plant the right material in the right places and you can bias what comes out, or hide a trigger phrase that makes the model misbehave on command.','The same applies to a system that keeps a memory or a document store: poison what it will read later and you have changed its answers permanently.'],
+ l:'Not lying to the student during the exam. Editing the textbook two years earlier.',
+ w:'It is one of the hardest AI risks to deal with, because by the time it shows up the training is long finished.'}
+];
+
+/* ---------- index ---------- */
+var ORDER={};CATS.forEach(function(c,n){ORDER[c.k]=n});
+T.sort(function(a,b){return ORDER[a.c]-ORDER[b.c]});
+T.forEach(function(x,i){x.i=i});
+var CMAP={};CATS.forEach(function(c){CMAP[c.k]=c});
+var seen={};
+try{seen=JSON.parse(localStorage.getItem('plainsight.seen')||'{}')||{}}catch(e){seen={}}
+var cur=0, filter=null, query='';
+
+function saveSeen(){try{localStorage.setItem('plainsight.seen',JSON.stringify(seen))}catch(e){}}
+function count(){var n=0;for(var k in seen)if(seen[k])n++;return n}
+function tally(){$('#tally').textContent=count()+' / '+T.length+' read'}
+
+function matches(x){
+  if(filter&&x.c!==filter)return false;
+  if(!query)return true;
+  var q=query.toLowerCase();
+  return x.t.toLowerCase().indexOf(q)>-1||(x.a||'').toLowerCase().indexOf(q)>-1||x.g.toLowerCase().indexOf(q)>-1;
+}
+function renderCats(){
+  $('#cats').innerHTML=CATS.map(function(c){
+    return '<button data-k="'+c.k+'" aria-pressed="false" style="color:'+c.c+'"><span class="dot"></span>'+esc(c.n)+'</button>';
+  }).join('');
+}
+function renderList(){
+  var out='',last='';
+  T.forEach(function(x){
+    if(!matches(x))return;
+    if(x.c!==last){last=x.c;out+='<div class="grp">'+esc(CMAP[x.c].n)+'</div>'}
+    out+='<button class="item'+(seen[x.i]?' seen':'')+'" data-i="'+x.i+'" aria-current="'+(x.i===cur)+'" style="--c:'+CMAP[x.c].c+'">'
+      +'<span class="tick"></span><span class="nm">'+esc(x.t)+'</span>'
+      +(x.d?'<span class="zap">LIVE</span>':(x.v?'<span class="zap vz">SHOWN</span>':''))+'</button>';
+  });
+  $('#list').innerHTML=out||'<div class="none">No word by that name in here yet.</div>';
+}
+function renderEntry(){
+  var x=T[cur],c=CMAP[x.c];
+  var h='<div class="chip" style="--c:'+c.c+'"><span class="dot"></span>'+esc(c.n)+'</div>'
+    +'<h1>'+esc(x.t)+'</h1>'
+    +(x.a?'<div class="alias">also called — '+esc(x.a)+'</div>':'')
+    +'<p class="gist">'+esc(x.g)+'</p><div class="rule"></div>'
+    +'<div class="block"><div class="lbl">In plain words</div>'+x.p.map(function(p){return '<p class="prose">'+esc(p)+'</p>'}).join('')+'</div>'
+    +'<div class="block"><div class="lbl">Think of it like</div><p class="likeit">'+esc(x.l)+'</p></div>'
+    +(x.w?'<div class="block"><div class="lbl">Why it matters</div><p class="why">'+esc(x.w)+'</p></div>':'')
+    +((x.d||x.v)?'<div id="demo"></div>':'');
+  $('#entry').innerHTML=h;
+  var dk=x.d||x.v;
+  if(dk&&DEMOS[dk]){try{DEMOS[dk]($('#demo'))}catch(e){
+    $('#demo').innerHTML='<div class="live"><div class="live-body"><p class="why">This one could not run in your browser.</p></div></div>'}}
+  if(!seen[cur]){seen[cur]=1;saveSeen();tally();renderList()}
+}
+function go(i,scroll){
+  cur=i;renderList();renderEntry();
+  if(scroll&&window.innerWidth<=860){
+    var el=$('#entry');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+}
+
+/* ---------- live demos ---------- */
+function shell(title,note,body){
+  return '<div class="live"><div class="live-top"><span class="bulb"></span><h2>'+esc(title)+'</h2></div>'
+    +'<div class="live-body">'+body+'</div>'+(note?'<p class="live-note">'+note+'</p>':'')+'</div>';
+}
+function rows(pairs){
+  return '<dl class="rows">'+pairs.map(function(p){
+    return '<div class="row"><dt>'+esc(p[0])+'</dt><dd>'+esc(p[1])+'</dd></div>'}).join('')+'</dl>';
+}
+async function sha256(str){
+  var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0')}).join('');
+}
+function canvasPrint(){
+  try{
+    var c=document.createElement('canvas');c.width=240;c.height=46;
+    var x=c.getContext('2d');
+    x.textBaseline='top';x.font='16px "Arial"';
+    x.fillStyle='#f36';x.fillRect(96,8,80,22);
+    x.fillStyle='#0a7';x.fillText('Plainsight ⚓ 0123',8,12);
+    x.globalCompositeOperation='multiply';
+    x.beginPath();x.arc(60,26,22,0,Math.PI*2);x.fillStyle='#07c';x.fill();
+    return c.toDataURL();
+  }catch(e){return null}
+}
+var DEMOS={};
+
+DEMOS.fp=function(el){
+  var n=navigator,s=screen,p=[];
+  function add(k,v){p.push([k,(v===undefined||v===null||v==='')?'not available':String(v)])}
+  add('Screen',s.width+' × '+s.height+' px, '+s.colorDepth+'-bit colour');
+  add('Window',window.innerWidth+' × '+window.innerHeight+' px');
+  add('Pixel ratio',window.devicePixelRatio);
+  try{add('Timezone',Intl.DateTimeFormat().resolvedOptions().timeZone)}catch(e){add('Timezone')}
+  add('Time offset',(-(new Date().getTimezoneOffset())/60)+' hours from UTC');
+  add('Language',(n.languages&&n.languages.join(', '))||n.language);
+  add('Platform',n.platform);
+  add('CPU cores',n.hardwareConcurrency);
+  add('Memory',n.deviceMemory?n.deviceMemory+' GB or more':'not shared by this browser');
+  add('Touch points',n.maxTouchPoints);
+  add('Cookies allowed',n.cookieEnabled?'yes':'no');
+  add('Do not track',n.doNotTrack===null||n.doNotTrack===undefined?'not set':n.doNotTrack);
+  try{
+    var gl=document.createElement('canvas').getContext('webgl');
+    var dbg=gl&&gl.getExtension('WEBGL_debug_renderer_info');
+    add('Graphics',dbg?gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL):'hidden by this browser');
+  }catch(e){add('Graphics','hidden by this browser')}
+  el.innerHTML=shell('Read off your machine, just now',
+    'Every line above was handed over automatically so this page could render. No permission was asked, because none is required. Alone, each is meaningless. Together they narrow you down a long way — though how far depends on how common your exact combination is, which this page cannot tell you on its own.',
+    rows(p)+'<div id="fpCanvas" style="margin-top:10px"></div>');
+  var d=canvasPrint();
+  var box=el.querySelector('#fpCanvas');
+  if(!d){box.innerHTML='<div class="lbl" style="margin-top:4px">Canvas fingerprint</div><div class="out quiet">Your browser blocked this one.</div>';return}
+  box.innerHTML='<div class="lbl" style="margin-top:4px">Your canvas fingerprint</div><div class="out" id="fpHash">measuring…</div>';
+  sha256(d).then(function(h){
+    var o=el.querySelector('#fpHash');
+    if(o)o.textContent=h.slice(0,40)+'…';
+  }).catch(function(){var o=el.querySelector('#fpHash');if(o){o.className='out quiet';o.textContent='could not be computed'}});
+};
+
+DEMOS.ua=function(el){
+  el.innerHTML=shell('What your browser just announced',
+    'Notice how many different browsers it claims to be. Those are decades of compatibility hacks, kept because websites once checked for them and never stopped.',
+    '<div class="out">'+esc(navigator.userAgent)+'</div>');
+};
+
+DEMOS.cookie=function(el){
+  el.innerHTML=shell('Set a real cookie on yourself','',
+    '<div class="btns"><button class="btn" id="ckSet">Set a cookie</button>'
+    +'<button class="btn" id="ckRead">Read it back</button>'
+    +'<button class="btn" id="ckDel">Delete it</button></div>'
+    +'<div class="out quiet" id="ckOut">Nothing yet. Press a button.</div>');
+  var out=el.querySelector('#ckOut');
+  function show(t,quiet){out.textContent=t;out.className='out'+(quiet?' quiet':'')}
+  function read(){try{return document.cookie||''}catch(e){return null}}
+  el.querySelector('#ckSet').onclick=function(){
+    try{
+      document.cookie='plainsight_demo=you_were_here_'+Date.now()+'; max-age=3600; path=/; SameSite=Lax';
+      var c=read();
+      show(c?c:'Set, but your browser is not handing it back — cookies may be blocked here.',!c);
+    }catch(e){show('Your browser refused to set it: '+e.message,true)}
+  };
+  el.querySelector('#ckRead').onclick=function(){
+    var c=read();
+    show(c===null?'Cookies are blocked in this context.':(c||'Nothing stored. Set one first.'),!c);
+  };
+  el.querySelector('#ckDel').onclick=function(){
+    try{document.cookie='plainsight_demo=; max-age=0; path=/'}catch(e){}
+    show('Deleted. '+(read()?'What is left: '+read():'Nothing left.'),true);
+  };
+};
+
+DEMOS.storage=function(el){
+  el.innerHTML=shell('Your own locker, on this page','This page already uses it — that counter in the top corner, remembering which entries you have read, lives here. Nobody else can see it, including me.',
+    '<input class="fld" id="lsIn" placeholder="type anything" aria-label="Value to store">'
+    +'<div class="btns"><button class="btn" id="lsSet">Store it</button>'
+    +'<button class="btn" id="lsGet">Read it back</button>'
+    +'<button class="btn" id="lsDel">Clear it</button></div>'
+    +'<div class="out quiet" id="lsOut">Nothing yet.</div>');
+  var out=el.querySelector('#lsOut');
+  function show(t,q){out.textContent=t;out.className='out'+(q?' quiet':'')}
+  el.querySelector('#lsSet').onclick=function(){
+    try{localStorage.setItem('plainsight.demo',el.querySelector('#lsIn').value);show('Stored. Close this tab, come back tomorrow, it is still there.')}
+    catch(e){show('Storage is blocked in this browser context.',true)}
+  };
+  el.querySelector('#lsGet').onclick=function(){
+    try{var v=localStorage.getItem('plainsight.demo');show(v===null?'Nothing stored under that name.':v,v===null)}
+    catch(e){show('Storage is blocked in this browser context.',true)}
+  };
+  el.querySelector('#lsDel').onclick=function(){
+    try{localStorage.removeItem('plainsight.demo');show('Cleared.',true)}catch(e){show('Storage is blocked here.',true)}
+  };
+};
+
+DEMOS.hash=function(el){
+  el.innerHTML=shell('Hash something, live','Change a single character and watch the whole thing change. That is the avalanche effect, and it is why a hash cannot be nudged towards an answer.',
+    '<input class="fld" id="hIn" value="Ember" aria-label="Text to hash">'
+    +'<div class="lbl" style="margin-top:11px">SHA-256</div><div class="out" id="hOut">…</div>');
+  var inp=el.querySelector('#hIn'),out=el.querySelector('#hOut');
+  function run(){sha256(inp.value).then(function(h){out.textContent=h}).catch(function(){out.textContent='unavailable in this browser'})}
+  inp.addEventListener('input',run);run();
+};
+
+DEMOS.salt=function(el){
+  el.innerHTML=shell('The same password, twice','Same password. Two different salts. Two hashes with nothing in common. An attacker now has to break each account separately, instead of all of them at once.',
+    '<input class="fld" id="sIn" value="hunter2" aria-label="Password">'
+    +'<div class="pair" style="margin-top:11px">'
+    +'<div><div class="lbl">salt: a7f3b1</div><div class="out" id="s1">…</div></div>'
+    +'<div><div class="lbl">salt: 4c9e02</div><div class="out" id="s2">…</div></div></div>'
+    +'<div class="lbl" style="margin-top:11px">with no salt at all — identical for every person who picked it</div>'
+    +'<div class="out" id="s0">…</div>');
+  var inp=el.querySelector('#sIn');
+  function run(){
+    var v=inp.value;
+    sha256('a7f3b1'+v).then(function(h){var e=el.querySelector('#s1');if(e)e.textContent=h.slice(0,48)+'…'});
+    sha256('4c9e02'+v).then(function(h){var e=el.querySelector('#s2');if(e)e.textContent=h.slice(0,48)+'…'});
+    sha256(v).then(function(h){var e=el.querySelector('#s0');if(e)e.textContent=h.slice(0,48)+'…'});
+  }
+  inp.addEventListener('input',run);run();
+};
+
+DEMOS.b64=function(el){
+  el.innerHTML=shell('Encode and decode, with no key','You were never asked for a password. Nobody was. That is the entire point of this demo.',
+    '<div class="swap"><button id="bEnc" aria-pressed="true">ENCODE</button><button id="bDec" aria-pressed="false">DECODE</button></div>'
+    +'<input class="fld" id="bIn" value="my password is definitely not hunter2" aria-label="Text">'
+    +'<div class="out" id="bOut">…</div>');
+  var mode='enc',inp=el.querySelector('#bIn'),out=el.querySelector('#bOut');
+  var be=el.querySelector('#bEnc'),bd=el.querySelector('#bDec');
+  function run(){
+    var v=inp.value;
+    try{
+      out.className='out';
+      out.textContent=mode==='enc'
+        ? btoa(unescape(encodeURIComponent(v)))
+        : decodeURIComponent(escape(atob(v.replace(/\s+/g,''))));
+    }catch(e){out.className='out quiet';out.textContent='That is not valid base64.'}
+  }
+  function set(m){
+    mode=m;be.setAttribute('aria-pressed',m==='enc');bd.setAttribute('aria-pressed',m==='dec');
+    if(m==='dec'&&inp.value.indexOf(' ')>-1){try{inp.value=btoa(unescape(encodeURIComponent(inp.value)))}catch(e){}}
+    run();
+  }
+  be.onclick=function(){set('enc')};bd.onclick=function(){set('dec')};
+  inp.addEventListener('input',run);run();
+};
+
+DEMOS.entropy=function(el){
+  el.innerHTML=shell('Count the bits yourself','',
+    '<input class="fld" id="eIn" value="P@ssw0rd!" aria-label="Password to measure" autocomplete="off">'
+    +'<div class="meter"><i id="eBar"></i></div>'
+    +'<dl class="rows" id="eRows"></dl>'
+    +'<p class="live-note" style="padding:11px 0 0" id="eWarn"></p>');
+  var inp=el.querySelector('#eIn');
+  var COMMON=['password','123456','12345678','qwerty','abc123','monkey','letmein','dragon','111111','iloveyou',
+    'admin','welcome','login','princess','sunshine','football','charlie','master','hello','freedom','whatever',
+    'passw0rd','p@ssw0rd','password1','hunter2','qwerty123','1q2w3e4r','asdfgh','zxcvbn'];
+  function pool(v){
+    var n=0;
+    if(/[a-z]/.test(v))n+=26;
+    if(/[A-Z]/.test(v))n+=26;
+    if(/[0-9]/.test(v))n+=10;
+    if(/[^a-zA-Z0-9]/.test(v))n+=33;
+    return n;
+  }
+  function pretty(sec){
+    if(!isFinite(sec))return 'longer than anyone will wait';
+    if(sec<1)return 'instantly';
+    var u=[['second',60],['minute',60],['hour',24],['day',365],['year',1e3],['thousand years',1e3],['million years',1e3]];
+    var v=sec,i=0;
+    while(i<u.length-1&&v>=u[i][1]){v/=u[i][1];i++}
+    if(i>=u.length-1&&v>1e3)return 'longer than the universe has existed';
+    return Math.round(v).toLocaleString('en')+' '+u[i][0]+(Math.round(v)===1?'':'s');
+  }
+  function run(){
+    var v=inp.value,P=pool(v),bits=v.length?v.length*Math.log2(P||1):0;
+    var guesses=Math.pow(2,bits)/2, rate=1e11;
+    var rowsEl=el.querySelector('#eRows');
+    rowsEl.innerHTML=[
+      ['Length',v.length+' characters'],
+      ['Alphabet used',P+' possible characters'],
+      ['Entropy',bits.toFixed(1)+' bits'],
+      ['If guessed randomly',pretty(guesses/rate)]
+    ].map(function(p){return '<div class="row"><dt>'+esc(p[0])+'</dt><dd>'+esc(p[1])+'</dd></div>'}).join('');
+    el.querySelector('#eBar').style.width=Math.min(100,(bits/90)*100)+'%';
+    var low=v.toLowerCase().replace(/[01345$@!]/g,function(c){return {'0':'o','1':'i','3':'e','4':'a','5':'s','$':'s','@':'a','!':'i'}[c]});
+    var weak=null;
+    for(var i=0;i<COMMON.length;i++){ if(low===COMMON[i]||low.indexOf(COMMON[i])>-1){weak=COMMON[i];break} }
+    if(/^\d+$/.test(v))weak=weak||'digits only';
+    var w=el.querySelector('#eWarn');
+    var base='That figure assumes every character was picked at random by a machine. Attackers do not start there — they start with leaked passwords and the obvious substitutions, so a human-chosen password is almost always weaker than its bit count suggests. The guessing rate used here is 100 billion attempts a second, which is a realistic offline attack on a fast hash.';
+    w.innerHTML=(weak?'<b style="color:var(--in)">This one contains a pattern attackers try first ('+esc(weak)+'). Treat the number above as fiction — in practice it falls immediately.</b><br><br>':'')+base;
+  }
+  inp.addEventListener('input',run);run();
+};
+
+/* ---------- stepped diagrams ---------- */
+function stepper(el,title,svg,caps,note){
+  el.innerHTML='<div class="diag"><div class="diag-top"><span class="bulb"></span><h2>'+esc(title)+'</h2></div>'
+    +'<div class="diag-body">'+svg+'</div>'
+    +'<div class="diag-cap" id="dcap"></div>'
+    +'<div class="diag-ctl"><button class="btn" id="dback">Back</button>'
+    +'<button class="btn" id="dnext">Next</button><span class="step" id="dstep"></span></div>'
+    +(note?'<p class="live-note">'+note+'</p>':'')+'</div>';
+  var i=0,n=caps.length;
+  var cap=el.querySelector('#dcap'),st=el.querySelector('#dstep'),
+      nx=el.querySelector('#dnext'),bk=el.querySelector('#dback');
+  function draw(){
+    Array.prototype.forEach.call(el.querySelectorAll('[data-s]'),function(g){
+      var s=+g.getAttribute('data-s');
+      g.style.opacity=(s<=i)?'1':'0';
+      if(s===i)g.classList.add('on');else g.classList.remove('on');
+    });
+    cap.innerHTML='<b>step '+(i+1)+' of '+n+'</b>'+esc(caps[i]);
+    st.textContent=(i+1)+' / '+n;
+    nx.textContent=(i===n-1)?'Replay':'Next';
+    bk.disabled=(i===0);
+  }
+  nx.onclick=function(){i=(i===n-1)?0:i+1;draw()};
+  bk.onclick=function(){if(i>0){i--;draw()}};
+  draw();
+}
+
+DEMOS.tls=function(el){
+  var svg='<svg viewBox="0 0 460 300" role="img" aria-label="The five steps of a TLS handshake between your browser and a website">'
+  +'<text class="nlab" x="62" y="17">YOU</text><text class="nlab" x="398" y="17">THE SITE</text>'
+  +'<line class="lane" x1="62" y1="25" x2="62" y2="292"/><line class="lane" x1="398" y1="25" x2="398" y2="292"/>'
+  +'<g data-s="0"><text class="flab" x="230" y="52">hello — here is the encryption I can do</text>'
+  +'<line class="flow" x1="62" y1="62" x2="389" y2="62"/><polygon class="head" points="398,62 387,57 387,67"/></g>'
+  +'<g data-s="1"><text class="flab" x="230" y="92">hello — and here is my ID card</text>'
+  +'<line class="flow" x1="398" y1="102" x2="71" y2="102"/><polygon class="head" points="62,102 73,97 73,107"/></g>'
+  +'<g data-s="2"><rect class="box" x="14" y="124" width="196" height="30" rx="3"/>'
+  +'<text class="blab" x="112" y="143">you check that signature</text></g>'
+  +'<g data-s="3"><text class="flab" x="230" y="178">agree a key out loud, without ever saying it</text>'
+  +'<line class="flow" x1="71" y1="188" x2="389" y2="188"/>'
+  +'<polygon class="head" points="398,188 387,183 387,193"/><polygon class="head" points="62,188 73,183 73,193"/></g>'
+  +'<g data-s="4"><rect class="box seal" x="34" y="212" width="392" height="58" rx="3"/>'
+  +'<text class="blab" x="230" y="237">everything from here is encrypted</text>'
+  +'<text class="blab dim" x="230" y="255">with the key you both just agreed</text></g></svg>';
+  stepper(el,'Watch the padlock happen',svg,[
+    'Your browser says hello and lists the encryption methods it can handle. Nothing is secret yet — anybody watching the wire can read this part.',
+    'The site says hello back and hands over its certificate: its ID card, signed by an authority your browser already trusts.',
+    'Your browser checks that signature against the list of authorities it shipped with. Good signature, carry on. Bad one, and you get the full-page red warning instead of the site.',
+    'Now both sides agree on a shared key by swapping values that are useless on their own. Somebody recording every message still cannot work out what was agreed.',
+    'From here the whole conversation is encrypted with that shared key, and it is fast, because the key is shared. All five steps finished in a fraction of a second and you saw none of it.'
+  ],'This runs every single time you load a page with a padlock. It has already run several times today.');
+};
+
+DEMOS.trackers=function(el){
+  var svg='<svg viewBox="0 0 440 272" role="img" aria-label="Four unrelated websites, each loading the same advertising company, which ends up having seen all four visits">'
+  +'<text class="nlab dim start" x="10" y="14">sites you open</text>'
+  +'<text class="nlab dim start" x="10" y="256">companies loaded inside those pages</text>'
+  +'<rect class="box" x="66" y="196" width="84" height="30" rx="3"/><text class="nlab" x="108" y="215">Pixl</text>'
+  +'<rect class="box" x="178" y="196" width="84" height="30" rx="3"/><text class="nlab" x="220" y="215">Ad-Mesh</text>'
+  +'<rect class="box" x="290" y="196" width="84" height="30" rx="3"/><text class="nlab" x="332" y="215">Trace-IQ</text>'
+  +'<g data-s="0"><line class="flow" x1="56" y1="62" x2="220" y2="196"/><line class="flow" x1="56" y1="62" x2="108" y2="196"/>'
+  +'<rect class="box" x="10" y="30" width="92" height="32" rx="3"/><text class="nlab" x="56" y="50">news site</text></g>'
+  +'<g data-s="1"><line class="flow" x1="166" y1="62" x2="220" y2="196"/><line class="flow" x1="166" y1="62" x2="332" y2="196"/>'
+  +'<rect class="box" x="120" y="30" width="92" height="32" rx="3"/><text class="nlab" x="166" y="50">shop</text></g>'
+  +'<g data-s="2"><line class="flow" x1="276" y1="62" x2="220" y2="196"/><line class="flow" x1="276" y1="62" x2="108" y2="196"/>'
+  +'<line class="flow" x1="276" y1="62" x2="332" y2="196"/>'
+  +'<rect class="box" x="230" y="30" width="92" height="32" rx="3"/><text class="nlab" x="276" y="50">recipe blog</text></g>'
+  +'<g data-s="3"><line class="flow" x1="386" y1="62" x2="220" y2="196"/>'
+  +'<rect class="box" x="340" y="30" width="92" height="32" rx="3"/><text class="nlab" x="386" y="50">forum</text></g></svg>';
+  stepper(el,'Four sites, one audience',svg,[
+    'You open a news site. Two advertising companies have code sitting inside that page, and each sets its own cookie on you. You have not visited either of them.',
+    'You open a shop. Ad-Mesh is inside this page too. It now knows the same browser read that news story and then went looking at this shop.',
+    'A recipe blog. All three are here. None of these websites are talking to each other, and they do not need to — the companies inside them are doing it.',
+    'A forum. Four unrelated sites, four separate visits, and Ad-Mesh was present for every single one. You never typed its name once.'
+  ],'The sites and company names here are invented for the drawing. The pattern is not. This is the mechanism browsers are now shutting down, which is exactly why tracking is moving to fingerprinting instead.');
+};
+
+DEMOS.mitm=function(el){
+  var svg='<svg viewBox="0 0 440 196" role="img" aria-label="A message going directly to a website, then being routed through an attacker in the middle, then blocked by the certificate check">'
+  +'<rect class="box" x="14" y="86" width="86" height="38" rx="3"/><text class="nlab" x="57" y="110">YOU</text>'
+  +'<rect class="box" x="340" y="86" width="86" height="38" rx="3"/><text class="nlab" x="383" y="110">THE SITE</text>'
+  +'<g data-s="0"><text class="flab" x="220" y="98">straight there</text>'
+  +'<text class="flab" x="220" y="114">and straight back</text>'
+  +'<line class="flow" x1="106" y1="105" x2="327" y2="105"/>'
+  +'<polygon class="head" points="336,105 325,100 325,110"/><polygon class="head" points="100,105 111,100 111,110"/></g>'
+  +'<g data-s="1"><rect class="box bad" x="176" y="84" width="88" height="42" rx="3"/>'
+  +'<text class="nlab bad" x="220" y="101">someone</text><text class="nlab bad" x="220" y="117">in between</text></g>'
+  +'<g data-s="2"><line class="flow bad" x1="106" y1="105" x2="167" y2="105"/>'
+  +'<polygon class="head bad" points="176,105 165,100 165,110"/>'
+  +'<line class="flow bad" x1="264" y1="105" x2="325" y2="105"/>'
+  +'<polygon class="head bad" points="334,105 323,100 323,110"/>'
+  +'<text class="blab bad" x="220" y="152">reads it all, and can change it</text></g>'
+  +'<g data-s="3"><line class="xmark" x1="256" y1="76" x2="272" y2="92"/>'
+  +'<line class="xmark" x1="272" y1="76" x2="256" y2="92"/>'
+  +'<text class="blab good" x="220" y="178">it cannot produce a valid ID card</text></g></svg>';
+  stepper(el,'Somebody steps into the middle',svg,[
+    'Normally your request goes straight to the site, and the answer comes straight back.',
+    'Now somebody has got in between. Open wifi in a café is the classic place for it. They pass everything along in both directions, so the connection still works perfectly and nothing feels wrong.',
+    'They read everything going past, and they can quietly change it on the way through. Your screen looks entirely normal, because nothing on your screen is wrong. It is the route that changed.',
+    'This is exactly what the certificate check is for. Your browser demands the site’s ID card, and the attacker cannot produce a valid one for a site they do not own. So the connection fails loudly instead of quietly working.'
+  ],'That red full-page warning is this defence doing its job. Clicking through it on a public network is a genuinely bad idea.');
+};
+
+/* ---------- decode ---------- */
+var LOOKUP=[];
+T.forEach(function(x){
+  LOOKUP.push([x.t,x.i]);
+  (x.a||'').split(',').forEach(function(a){a=a.trim();if(a)LOOKUP.push([a,x.i])});
+});
+function idOf(name){for(var i=0;i<T.length;i++)if(T[i].t.toLowerCase()===name.toLowerCase())return T[i].i;return 0}
+[['cookies','Cookie'],['certificates','Certificate'],['hashes','Hashing'],['hashed','Hashing'],
+ ['encrypted','Encryption'],['encrypt','Encryption'],['phished','Phishing'],['agents','AI agent'],
+ ['prompt injections','Prompt injection'],['vulnerabilities','Vulnerability'],['exploits','Exploit'],
+ ['patches','Patch'],['patched','Patch'],['firewalls','Firewall'],['sandboxed','Sandbox'],
+ ['salted','Salt'],['signatures','Digital signature'],['keys','Private key'],['tokens','Session']
+].forEach(function(p){LOOKUP.push([p[0],idOf(p[1])])});
+LOOKUP.sort(function(a,b){return b[0].length-a[0].length});
+var RE=new RegExp('\\b('+LOOKUP.map(function(p){
+  return p[0].replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+')}).join('|')+')\\b','gi');
+var INDEX={};LOOKUP.forEach(function(p){INDEX[p[0].toLowerCase().replace(/\s+/g,' ')]=p[1]});
+
+var EXAMPLE='The OWASP Top 10 for Agentic Applications flags tool poisoning and indirect prompt injection as live risks for any AI agent wired up over MCP. Hardening means guardrails outside the model: least privilege on every tool, short-lived credentials, and human approval before a high blast radius action. Map each finding to a CVE where one exists, and get the blue team to confirm the telemetry actually fires.';
+
+function decode(){
+  var txt=$('#paste').value;
+  var box=$('#decodeOut');
+  if(!txt.trim()){box.innerHTML='<p class="tally2">Paste something in first.</p>';return}
+  var found={};
+  var html=esc(txt).replace(RE,function(m){
+    var k=m.toLowerCase().replace(/\s+/g,' ');
+    if(!(k in INDEX))return m;
+    found[INDEX[k]]=1;
+    return '<span class="hit" role="button" tabindex="0" data-i="'+INDEX[k]+'">'+m+'</span>';
+  });
+  var n=Object.keys(found).length;
+  box.innerHTML='<div class="result">'+html+'</div>'
+    +'<p class="tally2">'+(n?n+' word'+(n===1?'':'s')+' in here have an entry. Tap any of them.':'None of these words are in the book yet. Tell me which ones to add.')+'</p>';
+}
+
+/* ---------- wiring ---------- */
+renderCats();tally();renderList();renderEntry();
+
+$('#list').addEventListener('click',function(e){
+  var b=e.target.closest('.item');if(b)go(+b.dataset.i,true);
+});
+$('#cats').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  filter=(filter===b.dataset.k)?null:b.dataset.k;
+  Array.prototype.forEach.call($('#cats').children,function(c){
+    c.setAttribute('aria-pressed',c.dataset.k===filter)});
+  renderList();
+});
+$('#q').addEventListener('input',function(e){query=e.target.value.trim();renderList()});
+$('#q').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){var f=$('#list .item');if(f)go(+f.dataset.i,true)}
+});
+
+function mode(dec){
+  $('#viewIdx').hidden=dec;$('#viewDec').hidden=!dec;
+  $('#mIdx').setAttribute('aria-selected',!dec);$('#mDec').setAttribute('aria-selected',dec);
+  window.scrollTo({top:0,behavior:'auto'});
+  if(dec)setTimeout(function(){try{$('#paste').focus({preventScroll:true})}catch(e){}},30);
+}
+$('#mIdx').onclick=function(){mode(false)};
+$('#mDec').onclick=function(){mode(true)};
+$('#decodeGo').onclick=decode;
+$('#decodeEg').onclick=function(){$('#paste').value=EXAMPLE;decode()};
+$('#paste').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();decode()}
+});
+$('#decodeOut').addEventListener('click',function(e){
+  var h=e.target.closest('.hit');if(!h)return;
+  mode(false);go(+h.dataset.i,true);
+  if(window.innerWidth>860)window.scrollTo({top:0,behavior:'smooth'});
+});
+$('#decodeOut').addEventListener('keydown',function(e){
+  var h=e.target.closest('.hit');
+  if(h&&(e.key==='Enter'||e.key===' ')){e.preventDefault();mode(false);go(+h.dataset.i,true)}
+});
+
+/* ---------- the way in ---------- */
+(function(){
+  var REDUCED=false;
+  try{REDUCED=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
+  var intro=$('#intro');if(!intro)return;
+  var n=navigator,s=screen,facts=[];
+  try{var tz=Intl.DateTimeFormat().resolvedOptions().timeZone;if(tz)facts.push('your timezone — '+tz)}catch(e){}
+  try{facts.push('your screen — '+s.width+' × '+s.height)}catch(e){}
+  var lang=(n.languages&&n.languages[0])||n.language;
+  if(lang)facts.push('your language — '+lang);
+  if(n.hardwareConcurrency)facts.push('your processor — '+n.hardwareConcurrency+' cores');
+  if(n.platform)facts.push('your system — '+n.platform);
+  facts=facts.slice(0,5);
+  if(!facts.length)facts.push('your browser is unusually quiet about itself');
+  var step=REDUCED?0:0.44, base=REDUCED?0:0.5;
+  $('#iReveal').innerHTML=facts.map(function(f,i){
+    return '<div style="animation-delay:'+(base+i*step).toFixed(2)+'s">'+esc(f)+'</div>';
+  }).join('')+'<div class="punch" style="animation-delay:'+(base+facts.length*step+0.55).toFixed(2)
+    +'s">and this page asked you for none of it.</div>';
+
+  var shown=0;T.forEach(function(x){if(x.d||x.v)shown++});
+  $('#iSub').textContent=T.length+' WORDS · '+shown+' YOU CAN WATCH HAPPEN';
+  var go=$('#iGo');
+  go.hidden=false;
+  go.style.animationDelay=(base+facts.length*step+1.3).toFixed(2)+'s';
+
+  try{document.body.style.overflow='hidden'}catch(e){}
+  var left=false;
+  function enter(){
+    if(left)return;left=true;
+    intro.classList.add('gone');
+    try{document.body.style.overflow=''}catch(e){}
+    setTimeout(function(){
+      if(intro.parentNode)intro.parentNode.removeChild(intro);
+      try{$('#q').focus({preventScroll:true})}catch(e){}
+    },REDUCED?0:460);
+  }
+  $('#iEnter').onclick=enter;
+  intro.addEventListener('click',function(e){if(e.target===intro)enter()});
+  document.addEventListener('keydown',function(e){
+    if(left)return;
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();enter()}
+  });
+})();
+})();
+</script>
+
+</body>
+</html>
